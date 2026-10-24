@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Operations Version="1.0" xmlns="http://schemas.microsoft.com/sqlserver/dac/Serialization/2012/02">
+  <Operation Name="Rename Refactor" Key="9048cc35-05f3-4bec-9c06-432c078e17c0" ChangeDateTime="01/27/2025 22:24:03">
+    <Property Name="ElementName" Value="[dbo].[Users].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Users]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="UserId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="7b5bdcd8-dc5e-473c-8276-88cf0e4cf5d3" ChangeDateTime="01/27/2025 22:25:17">
+    <Property Name="ElementName" Value="[dbo].[Users].[Role]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Users]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="RoleId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="252cd7a1-25fb-4ea8-a695-ad2558c8d77b" ChangeDateTime="01/27/2025 22:30:31">
+    <Property Name="ElementName" Value="[dbo].[Table1].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Table1]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="RoleId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="ccbd3620-48fa-4319-acd8-5adf8fbec011" ChangeDateTime="01/30/2025 20:27:16">
+    <Property Name="ElementName" Value="[dbo].[Demography].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Demography]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="DemographyId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="055b66c8-3d4a-4c54-9fea-56a440cc5fab" ChangeDateTime="01/30/2025 20:28:01">
+    <Property Name="ElementName" Value="[dbo].[Demography].[DemographyName]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Demography]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="Name" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="975be2f3-e754-467a-bd43-fa7ddbb34d67" ChangeDateTime="01/30/2025 20:28:06">
+    <Property Name="ElementName" Value="[dbo].[Demography].[De]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Demography]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="Description" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="0210f47c-36b2-474e-8b6d-8e1c2eae1880" ChangeDateTime="01/30/2025 20:34:51">
+    <Property Name="ElementName" Value="[dbo].[MangaType].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaType]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaTypeId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="12bcea5e-f2f7-4eb6-b080-36ac13daf57f" ChangeDateTime="01/30/2025 20:36:12">
+    <Property Name="ElementName" Value="[dbo].[MangaType].[MangaTypeDescription]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaType]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="Man" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="00f8f592-afce-4fd2-bd9a-39993038b035" ChangeDateTime="01/30/2025 20:36:23">
+    <Property Name="ElementName" Value="[dbo].[MangaType].[Man]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaType]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaTypeImgUrl" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="3fb808af-1fe9-4d42-8137-530afdf8c1c3" ChangeDateTime="01/30/2025 20:41:33">
+    <Property Name="ElementName" Value="[dbo].[Genre].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Genre]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="GenreId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="64f1c73f-0bcf-4280-907a-289772c0f2bb" ChangeDateTime="01/30/2025 20:51:37">
+    <Property Name="ElementName" Value="[dbo].[Genre].[ImagenUrl]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Genre]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="ImageUrl" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="f782327b-165d-46b4-b2ef-8afacba2aeef" ChangeDateTime="01/30/2025 20:52:11">
+    <Property Name="ElementName" Value="[dbo].[Genre].[ImageUrl]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Genre]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="ImgUrl" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="f091da58-930e-4011-b1dd-4bd7341a59bd" ChangeDateTime="01/30/2025 20:52:21">
+    <Property Name="ElementName" Value="[dbo].[Genre].[ImgUrl]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Genre]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="GenreImgUrl" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="53b05505-c2c9-470c-8398-787381d190a0" ChangeDateTime="01/30/2025 21:13:04">
+    <Property Name="ElementName" Value="[dbo].[Mangas].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="e4e86c18-d7aa-4459-b96b-f30994913610" ChangeDateTime="01/30/2025 21:13:34">
+    <Property Name="ElementName" Value="[dbo].[Mangas].[Tittle]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaTittle" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="d18193ca-ca71-43d7-9f70-6b7c67dd155d" ChangeDateTime="01/30/2025 21:14:39">
+    <Property Name="ElementName" Value="[dbo].[MangaStatus].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaStatus]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaStatusId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="b189ed6e-cd17-4a38-9df2-ee767d45ac3f" ChangeDateTime="01/30/2025 21:15:46">
+    <Property Name="ElementName" Value="[dbo].[Mangas].[MangaStatus]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaStatusId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="96e066bb-e0fd-4f66-a32b-1ffab562c1ad" ChangeDateTime="01/30/2025 21:16:27">
+    <Property Name="ElementName" Value="[dbo].[Mangas].[AlternativeName]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="AlternativeNames" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="f80c6d26-45e4-4d23-8bcd-6cc5f4e5b09d" ChangeDateTime="01/30/2025 21:20:30">
+    <Property Name="ElementName" Value="[dbo].[Mangas].[Manga]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaFrontImgUrl" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="1435aef7-1c07-4c59-8da5-eda6a172612d" ChangeDateTime="01/30/2025 21:21:16">
+    <Property Name="ElementName" Value="[dbo].[Mangas].[Registed]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="RegisteredBy" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="783b6bdd-3284-46d3-9c94-828bb6565c18" ChangeDateTime="01/30/2025 21:39:05">
+    <Property Name="ElementName" Value="[dbo].[FK_Mangas_ToTable]" />
+    <Property Name="ElementType" Value="SqlForeignKeyConstraint" />
+    <Property Name="ParentElementName" Value="[dbo].[Mangas]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="[FK_Mangas_MangaType]" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="9b94685e-2b6a-4473-b525-b62c0bff5a98" ChangeDateTime="01/31/2025 05:08:01">
+    <Property Name="ElementName" Value="[dbo].[MangaGenre].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaGenre]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="GenreId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="4f68c3e3-c19f-49d2-b70e-928edc2868f2" ChangeDateTime="01/31/2025 06:07:24">
+    <Property Name="ElementName" Value="[dbo].[MangasMultimedias].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangasMultimedias]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="MangaMultimediaId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="22c9c659-e595-4ce9-8b21-c83e7c9cdec4" ChangeDateTime="01/31/2025 06:10:42">
+    <Property Name="ElementName" Value="[dbo].[MangasDemographics].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangasDemographics]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="DemographyId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="c456fac1-062e-4af4-ab9c-bf783c0c747f" ChangeDateTime="01/31/2025 06:14:05">
+    <Property Name="ElementName" Value="[dbo].[ScansGroups].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[ScansGroups]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="ScanId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="17b75fbd-0c2b-49fa-b19b-bd4515b229b9" ChangeDateTime="01/31/2025 14:41:27">
+    <Property Name="ElementName" Value="[dbo].[MangaChapters].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaChapters]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="ChapterId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="38270f84-e719-4b32-916e-ea0a048d475c" ChangeDateTime="01/31/2025 14:46:58">
+    <Property Name="ElementName" Value="[dbo].[MangaChapters].[Status]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[MangaChapters]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="ChapterStatus" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="b8dbc8bd-76df-4e65-953e-66bf2b018d25" ChangeDateTime="01/31/2025 14:50:56">
+    <Property Name="ElementName" Value="[dbo].[FK_MangasMultimedias_ToTable]" />
+    <Property Name="ElementType" Value="SqlForeignKeyConstraint" />
+    <Property Name="ParentElementName" Value="[dbo].[MangasMultimedias]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="[FK_MangasMultimedias_Scans]" />
+  </Operation>
+</Operations>
