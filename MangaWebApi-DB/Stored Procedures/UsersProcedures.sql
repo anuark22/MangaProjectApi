@@ -1,4 +1,4 @@
-﻿CREATE OR ALTER PROCEDURE [dbo].[UsersProcedures]
+CREATE PROCEDURE [dbo].[UsersProcedures]
 	@UserId INT = NULL,
 	@Username VARCHAR(255) = NULL,
 	@Email VARCHAR(255) = NULL,

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Models;
 using Services.Interfaces;
 using MangaProjectApi.CustomMiddleware;
