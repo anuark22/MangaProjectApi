@@ -9,6 +9,7 @@
     [CreatedAt] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     [UpdatedAt] DATETIME NULL, 
     [RecoveryToken] VARCHAR(MAX) NULL, 
+    [RecoveryTokenExpiration] DATETIME NULL, 
     [AceptTerms] BIT NOT NULL, 
     [IsBlocked] BIT NOT NULL DEFAULT 0, 
     [ScanId] INT NULL, 
