@@ -303,5 +303,38 @@ namespace Services
             }
             return response;
         }
+
+        public async Task<Response<DBClass>> UpdateUserRole(UpdateUserRoleDTO model, int adminUserId)
+        {
+            Response<DBClass> response = new();
+
+            // Evitar que el administrador se quite su propio rol de administrador accidentalmente
+            if (model.UserId == adminUserId && model.RoleId != (int)RolesEnum.Admin)
+            {
+                response.ParseExecution(400, "No puedes revocar tu propio rol de administrador.");
+                return response;
+            }
+
+            int action = 5;
+            object param = new
+            {
+                Action = action,
+                model.UserId,
+                model.RoleId
+            };
+
+            IEnumerable<DBClass> dbResponse = await _commonService.QueryAsync<DBClass>("RolesProcedures", param, CommandType.StoredProcedure);
+            var first = dbResponse.FirstOrDefault();
+            if (first != null)
+            {
+                response.ParseExecution(first.Status, first.ErrorDescription);
+            }
+            else
+            {
+                response.ParseExecution(500, "Database error");
+            }
+
+            return response;
+        }
     }
 }

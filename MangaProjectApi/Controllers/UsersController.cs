@@ -140,5 +140,21 @@ namespace MangaProjectApi.Controllers
             Response<Users> response = await _usersService.ResetPassword(model);
             return ResponseHandler(response);
         }
+
+        [HttpPut]
+        [AdminOnly]
+        public async Task<IActionResult> UpdateUserRole([FromBody] UpdateUserRoleDTO model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            int adminUserId = userIdClaim != null && int.TryParse(userIdClaim.Value, out int id) ? id : 0;
+
+            Response<DBClass> response = await _usersService.UpdateUserRole(model, adminUserId);
+            return ResponseHandler(response);
+        }
     }
 }

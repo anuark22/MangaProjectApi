@@ -14,5 +14,6 @@ namespace Services.Interfaces
         Task<Response<Users>> ForgotPassword(ForgotPasswordRequestDTO model);
         Response<Users> ValidateRecoveryToken(ValidateTokenDTO model);
         Task<Response<Users>> ResetPassword(ResetPasswordDTO model);
+        Task<Response<DBClass>> UpdateUserRole(UpdateUserRoleDTO model, int adminUserId);
     }
 }

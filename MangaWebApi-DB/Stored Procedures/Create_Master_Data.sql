@@ -1,4 +1,4 @@
-﻿CREATE OR ALTER PROCEDURE [dbo].[Create_Master_Data]
+CREATE OR ALTER PROCEDURE [dbo].[Create_Master_Data]
 AS
 BEGIN
 	IF NOT EXISTS(SELECT * FROM Roles WHERE RoleId = 1)

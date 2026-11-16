@@ -104,6 +104,15 @@ namespace Models
         public string? ConfirmPassword { get; set; }
     }
 
+    public class UpdateUserRoleDTO
+    {
+        [Required(ErrorMessage = "El ID del usuario es requerido")]
+        public int UserId { get; set; }
+
+        [Required(ErrorMessage = "El ID del rol es requerido")]
+        public int RoleId { get; set; }
+    }
+
     // Clases legacy conservadas para retrocompatibilidad
     public class ChangePassword
     {
