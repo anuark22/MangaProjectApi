@@ -4,12 +4,12 @@ using Models;
 
 namespace MangaProjectApi.CustomMiddleware
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class AllowAnonymousAttribute : Attribute
     {
     }
 
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class AdminOnlyAttribute : Attribute
     {
     }
