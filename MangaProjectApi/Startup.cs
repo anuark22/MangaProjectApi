@@ -47,6 +47,7 @@ namespace MangaProjectApi
             services.AddScoped<IForumService, ForumService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IRolesService, RolesService>();
+            services.AddScoped<IScanGroupApplicationsService, ScanGroupApplicationsService>();
             // 
             services.AddSwaggerGen(c =>
             {

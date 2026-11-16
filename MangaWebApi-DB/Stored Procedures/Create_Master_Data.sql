@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE [dbo].[Create_Master_Data]
+CREATE PROCEDURE [dbo].[Create_Master_Data]
 AS
 BEGIN
 	IF NOT EXISTS(SELECT * FROM Roles WHERE RoleId = 1)
@@ -29,4 +29,18 @@ BEGIN
 			IsActive = 1,
 			IsDefaultRole = 1
 		WHERE RoleId = 2
+	IF NOT EXISTS(SELECT * FROM Roles WHERE RoleId = 3)
+	BEGIN
+		SET IDENTITY_INSERT Roles ON
+		INSERT INTO Roles (RoleId, RoleName, RoleDescription, IsActive, IsOwnerRole, IsDefaultRole)
+		VALUES (3, 'SCAN', 'Rol de Scanlation y subida de capítulos', 1, 0, 1);
+		SET IDENTITY_INSERT Roles OFF
+	END
+	ELSE 
+		UPDATE Roles SET 
+			RoleName = 'SCAN', 
+			RoleDescription = 'Rol de Scanlation y subida de capítulos',
+			IsActive = 1,
+			IsDefaultRole = 1
+		WHERE RoleId = 3
 END
