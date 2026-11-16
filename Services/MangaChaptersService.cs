@@ -36,6 +36,38 @@ namespace Services
             return response;
         }
 
+        public async Task<Response<MangaPages>> GetChapterPages(int chapterId)
+        {
+            Response<MangaPages> response = new();
+            try
+            {
+                var pages = await _commonService.QueryAsync<MangaPages>(
+                    "SELECT [PageId], [ChapterId], [PageNumber], [PageImgUrl] FROM [dbo].[MangaPages] WHERE [ChapterId] = @ChapterId ORDER BY [PageNumber] ASC",
+                    new { ChapterId = chapterId },
+                    CommandType.Text
+                );
+
+                var domainUrl = _config["MultimediaBaseUrl"] ?? _config["DomainSettings:ImageUrl"] ?? "https://localhost:44311/Files/";
+                var list = pages.ToList();
+                foreach (var page in list)
+                {
+                    if (!string.IsNullOrEmpty(page.PageImgUrl) && !page.PageImgUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        page.PageImgUrl = $"{domainUrl.TrimEnd('/')}/{page.PageImgUrl.TrimStart('/')}";
+                    }
+                }
+
+                response.Items = list;
+                response.ParseResponse(true);
+            }
+            catch (Exception ex)
+            {
+                response.ParseExecution(500, $"Error al obtener las páginas del capítulo: {ex.Message}");
+            }
+
+            return response;
+        }
+
         public async Task<Response<MangaChapters>> CreateMangaChapter(MangaChapterCreateDTO model, int userId)
         {
             Response<MangaChapters> response = new();

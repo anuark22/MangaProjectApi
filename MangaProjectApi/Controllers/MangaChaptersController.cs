@@ -30,6 +30,14 @@ namespace MangaProjectApi.Controllers
             return ResponseHandler(response);
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetChapterPages(int chapterId)
+        {
+            Response<MangaPages> response = await _mangaChaptersService.GetChapterPages(chapterId);
+            return ResponseHandler(response);
+        }
+
         [HttpPost]
         [AdminOnly]
         public async Task<IActionResult> CreateMangaChapter([FromForm] MangaChapterCreateDTO model)
