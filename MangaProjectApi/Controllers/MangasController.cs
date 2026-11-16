@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using MangaProjectApi.CustomMiddleware;
 using Models;
@@ -24,9 +24,42 @@ namespace MangaProjectApi.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult GetMangas(int? mangaId, string? mangaTittle, int? mangaTypeId)
+        public IActionResult GetMangas(
+            int? mangaId, 
+            string? mangaTittle, 
+            int? mangaTypeId,
+            int? demographyId,
+            string? status,
+            bool? isAmateur,
+            bool? isErotic,
+            bool? isFeatured)
         {
-            Response<Mangas> response = _mangasService.GetMangas(mangaId, mangaTittle, mangaTypeId);
+            Response<Mangas> response = _mangasService.GetMangas(
+                mangaId, 
+                mangaTittle, 
+                mangaTypeId, 
+                demographyId, 
+                status, 
+                isAmateur, 
+                isErotic, 
+                isFeatured
+            );
+            return ResponseHandler(response);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult GetPopularMangas(int top = 10)
+        {
+            Response<Mangas> response = _mangasService.GetPopularMangas(top);
+            return ResponseHandler(response);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult GetMangaDetail(int mangaId)
+        {
+            Response<MangaDetailDTO> response = _mangasService.GetMangaDetail(mangaId);
             return ResponseHandler(response);
         }
 
@@ -39,7 +72,6 @@ namespace MangaProjectApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Extraer el ID del usuario autenticado desde los claims del token
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
 
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))

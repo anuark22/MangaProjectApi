@@ -1,0 +1,14 @@
+CREATE TABLE [dbo].[ForumPosts] (
+    [PostId] INT IDENTITY(1,1) PRIMARY KEY,
+    [Title] VARCHAR(255) NOT NULL,
+    [Content] VARCHAR(MAX) NOT NULL,
+    [Topic] VARCHAR(100) NOT NULL,
+    [SubTopic] VARCHAR(100) NOT NULL,
+    [UserId] INT NOT NULL,
+    [ViewsCount] INT NOT NULL DEFAULT 0,
+    [CreatedAt] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    [UpdatedAt] DATETIME NULL,
+    [IsPinned] BIT NOT NULL DEFAULT 0,
+    [IsClosed] BIT NOT NULL DEFAULT 0,
+    CONSTRAINT [FK_ForumPosts_Users] FOREIGN KEY ([UserId]) REFERENCES [Users]([UserId])
+);

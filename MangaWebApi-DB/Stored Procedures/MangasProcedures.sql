@@ -10,35 +10,58 @@
     @EditorialName VARCHAR(155) = NULL,
     @Rating DECIMAL(3, 1) = NULL,
     @Hidden BIT = NULL,
+    @Status VARCHAR(50) = NULL,
+    @IsAmateur BIT = NULL,
+    @IsErotic BIT = NULL,
+    @IsFeatured BIT = NULL,
+    @DemographyId INT = NULL,
     @Action INT 
 AS
 BEGIN
     SET NOCOUNT ON;
 
     -- =========================================================================
-    -- ACTION 1: SELECT (Buscar todos o por filtros adaptativos)
+    -- ACTION 1: SELECT (Buscar todos o por filtros adaptativos para catálogo)
     -- =========================================================================
     IF @Action = 1
     BEGIN
         SELECT 
-            [MangaId],
-            [MangaTittle],
-            [MangaDescription],
-            [AlternativeNames],
-            [Mangaka],
-            [CreatedAt],
-            [UpdatedAt],
-            [MangaFrontImgUrl],
-            [RegisteredBy],
-            [MangaTypeId],
-            [EditorialName],
-            [Rating],
-            [Hidden]
-        FROM [dbo].[Mangas]
+            m.[MangaId],
+            m.[MangaTittle],
+            m.[MangaDescription],
+            m.[AlternativeNames],
+            m.[Mangaka],
+            m.[CreatedAt],
+            m.[UpdatedAt],
+            m.[MangaFrontImgUrl],
+            m.[RegisteredBy],
+            m.[MangaTypeId],
+            ISNULL(mt.[MangaTypeName], '') AS [MangaTypeName],
+            md.[DemographyId],
+            ISNULL(d.[Name], '') AS [DemographyName],
+            m.[EditorialName],
+            m.[Rating],
+            m.[Hidden],
+            m.[Status],
+            m.[IsAmateur],
+            m.[IsErotic],
+            m.[IsFeatured],
+            m.[ViewCount]
+        FROM [dbo].[Mangas] m
+        LEFT JOIN [dbo].[MangasType] mt ON m.[MangaTypeId] = mt.[MangaTypeId]
+        LEFT JOIN [dbo].[MangasDemographics] md ON m.[MangaId] = md.[MangaId]
+        LEFT JOIN [dbo].[Demographics] d ON md.[DemographyId] = d.[DemographyId]
         WHERE 
-            (@MangaId IS NULL OR [MangaId] = @MangaId)
-            AND (@MangaTittle IS NULL OR [MangaTittle] LIKE '%' + @MangaTittle + '%')
-            AND (@MangaTypeId IS NULL OR [MangaTypeId] = @MangaTypeId)
+            (@MangaId IS NULL OR m.[MangaId] = @MangaId)
+            AND (@MangaTittle IS NULL OR m.[MangaTittle] LIKE '%' + @MangaTittle + '%')
+            AND (@MangaTypeId IS NULL OR m.[MangaTypeId] = @MangaTypeId)
+            AND (@DemographyId IS NULL OR md.[DemographyId] = @DemographyId)
+            AND (@Status IS NULL OR m.[Status] = @Status)
+            AND (@IsAmateur IS NULL OR m.[IsAmateur] = @IsAmateur)
+            AND (@IsErotic IS NULL OR m.[IsErotic] = @IsErotic)
+            AND (@IsFeatured IS NULL OR m.[IsFeatured] = @IsFeatured)
+            AND (@Hidden IS NULL OR m.[Hidden] = @Hidden)
+        ORDER BY m.[MangaId] DESC;
     END
 
     -- =========================================================================
@@ -46,7 +69,6 @@ BEGIN
     -- =========================================================================
     IF @Action = 2
     BEGIN
-        -- Validación: El título del manga ya existe
         IF EXISTS (SELECT 1 FROM [dbo].[Mangas] WHERE [MangaTittle] = TRIM(@MangaTittle))
         BEGIN
             SELECT 409 AS [Status], 'The manga title already exists' AS [ErrorDescription];
@@ -66,7 +88,12 @@ BEGIN
                 [MangaTypeId], 
                 [EditorialName], 
                 [Rating], 
-                [Hidden]
+                [Hidden],
+                [Status],
+                [IsAmateur],
+                [IsErotic],
+                [IsFeatured],
+                [ViewCount]
             )
             VALUES 
             (
@@ -80,10 +107,23 @@ BEGIN
                 @MangaTypeId, 
                 TRIM(@EditorialName), 
                 ISNULL(@Rating, 0.0), 
-                ISNULL(@Hidden, 0)
+                ISNULL(@Hidden, 0),
+                ISNULL(@Status, 'Publishing'),
+                ISNULL(@IsAmateur, 0),
+                ISNULL(@IsErotic, 0),
+                ISNULL(@IsFeatured, 0),
+                0
             );
 
-            SELECT 200 AS [Status], SCOPE_IDENTITY() AS [NewMangaId];
+            DECLARE @NewMangaId INT = SCOPE_IDENTITY();
+
+            IF @DemographyId IS NOT NULL
+            BEGIN
+                INSERT INTO [dbo].[MangasDemographics] ([DemographyId], [MangaId])
+                VALUES (@DemographyId, @NewMangaId);
+            END
+
+            SELECT 200 AS [Status], @NewMangaId AS [NewMangaId];
         END TRY
         BEGIN CATCH
             SELECT 500 AS [Status], ERROR_MESSAGE() AS [ErrorDescription];
@@ -95,14 +135,12 @@ BEGIN
     -- =========================================================================
     IF @Action = 3
     BEGIN
-        -- Validación 1: Verificar si el registro existe
         IF NOT EXISTS (SELECT 1 FROM [dbo].[Mangas] WHERE [MangaId] = @MangaId)
         BEGIN
             SELECT 404 AS [Status], 'Manga not found' AS [ErrorDescription];
             RETURN;
         END
 
-        -- Validación 2: Si cambian el título, verificar que no cause duplicados en otros IDs
         IF @MangaTittle IS NOT NULL AND EXISTS (
             SELECT 1 FROM [dbo].[Mangas] 
             WHERE [MangaTittle] = TRIM(@MangaTittle) AND [MangaId] <> @MangaId
@@ -124,9 +162,28 @@ BEGIN
                 [MangaTypeId] = ISNULL(@MangaTypeId, [MangaTypeId]),
                 [EditorialName] = ISNULL(TRIM(@EditorialName), [EditorialName]),
                 [Rating] = ISNULL(@Rating, [Rating]),
-                [Hidden] = ISNULL(@Hidden, [Hidden])
+                [Hidden] = ISNULL(@Hidden, [Hidden]),
+                [Status] = ISNULL(@Status, [Status]),
+                [IsAmateur] = ISNULL(@IsAmateur, [IsAmateur]),
+                [IsErotic] = ISNULL(@IsErotic, [IsErotic]),
+                [IsFeatured] = ISNULL(@IsFeatured, [IsFeatured])
             WHERE 
                 [MangaId] = @MangaId;
+
+            IF @DemographyId IS NOT NULL
+            BEGIN
+                IF EXISTS (SELECT 1 FROM [dbo].[MangasDemographics] WHERE [MangaId] = @MangaId)
+                BEGIN
+                    UPDATE [dbo].[MangasDemographics]
+                    SET [DemographyId] = @DemographyId
+                    WHERE [MangaId] = @MangaId;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO [dbo].[MangasDemographics] ([DemographyId], [MangaId])
+                    VALUES (@DemographyId, @MangaId);
+                END
+            END
 
             SELECT 200 AS [Status];
         END TRY
@@ -140,7 +197,6 @@ BEGIN
     -- =========================================================================
     IF @Action = 4
     BEGIN
-        -- Validación: Verificar si el registro existe
         IF NOT EXISTS (SELECT 1 FROM [dbo].[Mangas] WHERE [MangaId] = @MangaId)
         BEGIN
             SELECT 404 AS [Status], 'Manga not found' AS [ErrorDescription];
@@ -148,14 +204,50 @@ BEGIN
         END
 
         BEGIN TRY
-            DELETE FROM [dbo].[Mangas]
-            WHERE [MangaId] = @MangaId;
+            DELETE FROM [dbo].[MangasDemographics] WHERE [MangaId] = @MangaId;
+            DELETE FROM [dbo].[MangaGenres] WHERE [MangaId] = @MangaId;
+            DELETE FROM [dbo].[Mangas] WHERE [MangaId] = @MangaId;
 
             SELECT 200 AS [Status];
         END TRY
         BEGIN CATCH
             SELECT 500 AS [Status], ERROR_MESSAGE() AS [ErrorDescription];
         END CATCH
+    END
+
+    -- =========================================================================
+    -- ACTION 5: SELECT POPULAR (Para la sección Top Tier / Popular Mangas del Home)
+    -- =========================================================================
+    IF @Action = 5
+    BEGIN
+        SELECT TOP 10
+            m.[MangaId],
+            m.[MangaTittle],
+            m.[MangaDescription],
+            m.[AlternativeNames],
+            m.[Mangaka],
+            m.[CreatedAt],
+            m.[UpdatedAt],
+            m.[MangaFrontImgUrl],
+            m.[RegisteredBy],
+            m.[MangaTypeId],
+            ISNULL(mt.[MangaTypeName], '') AS [MangaTypeName],
+            md.[DemographyId],
+            ISNULL(d.[Name], '') AS [DemographyName],
+            m.[EditorialName],
+            m.[Rating],
+            m.[Hidden],
+            m.[Status],
+            m.[IsAmateur],
+            m.[IsErotic],
+            m.[IsFeatured],
+            m.[ViewCount]
+        FROM [dbo].[Mangas] m
+        LEFT JOIN [dbo].[MangasType] mt ON m.[MangaTypeId] = mt.[MangaTypeId]
+        LEFT JOIN [dbo].[MangasDemographics] md ON m.[MangaId] = md.[MangaId]
+        LEFT JOIN [dbo].[Demographics] d ON md.[DemographyId] = d.[DemographyId]
+        WHERE m.[Hidden] = 0
+        ORDER BY m.[IsFeatured] DESC, m.[Rating] DESC, m.[ViewCount] DESC, m.[MangaId] DESC;
     END
 
 END

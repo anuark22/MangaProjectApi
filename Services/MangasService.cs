@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Models;
 using Services.Interfaces;
@@ -24,11 +24,30 @@ namespace Services
             _config = config;
         }
 
-        public Response<Mangas> GetMangas(int? mangaId = null, string? mangaTittle = null, int? mangaTypeId = null)
+        public Response<Mangas> GetMangas(
+            int? mangaId = null, 
+            string? mangaTittle = null, 
+            int? mangaTypeId = null,
+            int? demographyId = null,
+            string? status = null,
+            bool? isAmateur = null,
+            bool? isErotic = null,
+            bool? isFeatured = null)
         {
             Response<Mangas> response = new();
             int action = 1;
-            object param = new { Action = action, MangaId = mangaId, MangaTittle = mangaTittle, MangaTypeId = mangaTypeId };
+            object param = new 
+            { 
+                Action = action, 
+                MangaId = mangaId, 
+                MangaTittle = mangaTittle, 
+                MangaTypeId = mangaTypeId,
+                DemographyId = demographyId,
+                Status = status,
+                IsAmateur = isAmateur,
+                IsErotic = isErotic,
+                IsFeatured = isFeatured
+            };
 
             response.Items = _commonService.Query<Mangas>("MangasProcedures", param, CommandType.StoredProcedure);
             response.ParseResponse(true);
@@ -37,7 +56,7 @@ namespace Services
 
             Parallel.ForEach(response.Items, new ParallelOptions { MaxDegreeOfParallelism = 4 }, manga =>
             {
-                if (!string.IsNullOrEmpty(manga.MangaFrontImgUrl))
+                if (!string.IsNullOrEmpty(manga.MangaFrontImgUrl) && !manga.MangaFrontImgUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     manga.MangaFrontImgUrl = $"{baseUrl.TrimEnd('/')}/{manga.MangaFrontImgUrl.TrimStart('/')}";
                 }
@@ -46,11 +65,93 @@ namespace Services
             return response;
         }
 
+        public Response<Mangas> GetPopularMangas(int top = 10)
+        {
+            Response<Mangas> response = new();
+            int action = 5;
+            object param = new { Action = action };
+
+            response.Items = _commonService.Query<Mangas>("MangasProcedures", param, CommandType.StoredProcedure);
+            response.ParseResponse(true);
+
+            string baseUrl = _config["MultimediaBaseUrl"] ?? string.Empty;
+
+            Parallel.ForEach(response.Items, new ParallelOptions { MaxDegreeOfParallelism = 4 }, manga =>
+            {
+                if (!string.IsNullOrEmpty(manga.MangaFrontImgUrl) && !manga.MangaFrontImgUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    manga.MangaFrontImgUrl = $"{baseUrl.TrimEnd('/')}/{manga.MangaFrontImgUrl.TrimStart('/')}";
+                }
+            });
+
+            return response;
+        }
+
+        public Response<MangaDetailDTO> GetMangaDetail(int mangaId)
+        {
+            Response<MangaDetailDTO> response = new();
+
+            // 1. Obtener información básica del manga
+            var mangaResponse = GetMangas(mangaId: mangaId);
+            var manga = mangaResponse.Items?.FirstOrDefault();
+
+            if (manga == null)
+            {
+                response.ParseExecution(404, "Manga no encontrado");
+                return response;
+            }
+
+            // 2. Obtener capítulos asociados
+            object chapterParams = new { Action = 1, MangaId = mangaId };
+            var chapters = _commonService.Query<MangaChapters>("MangaChaptersProcedures", chapterParams, CommandType.StoredProcedure).ToList();
+
+            // 3. Obtener géneros asociados
+            string genreSql = @"
+                SELECT g.[GenreId], g.[GenreName], g.[GenreDescription], g.[CreatedAt], g.[Status], g.[GenreImgUrl], g.[UpdatedAt]
+                FROM [dbo].[Genres] g
+                INNER JOIN [dbo].[MangaGenres] mg ON g.[GenreId] = mg.[GenreId]
+                WHERE mg.[MangaId] = @MangaId";
+            var genres = _commonService.Query<Genres>(genreSql, new { MangaId = mangaId }).ToList();
+
+            // 4. Mapear al DTO consolidado
+            MangaDetailDTO detail = new()
+            {
+                MangaId = manga.MangaId,
+                MangaTittle = manga.MangaTittle,
+                MangaDescription = manga.MangaDescription,
+                AlternativeNames = manga.AlternativeNames,
+                Mangaka = manga.Mangaka,
+                CreatedAt = manga.CreatedAt,
+                UpdatedAt = manga.UpdatedAt,
+                MangaFrontImgUrl = manga.MangaFrontImgUrl,
+                RegisteredBy = manga.RegisteredBy,
+                MangaTypeId = manga.MangaTypeId,
+                MangaTypeName = manga.MangaTypeName,
+                DemographyId = manga.DemographyId,
+                DemographyName = manga.DemographyName,
+                EditorialName = manga.EditorialName,
+                Rating = manga.Rating,
+                Hidden = manga.Hidden,
+                Status = manga.Status,
+                IsAmateur = manga.IsAmateur,
+                IsErotic = manga.IsErotic,
+                IsFeatured = manga.IsFeatured,
+                ViewCount = manga.ViewCount,
+                Chapters = chapters,
+                Genres = genres
+            };
+
+            response.Items = new List<MangaDetailDTO> { detail };
+            response.ParseResponse(true);
+
+            return response;
+        }
+
         public async Task<Response<Mangas>> CreateManga(MangaCreateDTO model, int userId)
         {
             Response<Mangas> response = new();
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg" , ".webp" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
             var fileExtension = Path.GetExtension(model.File.FileName).ToLower();
 
             if (!allowedExtensions.Contains(fileExtension))
@@ -86,9 +187,14 @@ namespace Services
                     MangaFrontImgUrl = uniqueFileName,
                     RegisteredBy = userId,
                     model.MangaTypeId,
+                    model.DemographyId,
                     model.EditorialName,
                     model.Rating,
-                    model.Hidden
+                    model.Hidden,
+                    model.Status,
+                    model.IsAmateur,
+                    model.IsErotic,
+                    model.IsFeatured
                 };
 
                 IEnumerable<DBClass> dbResponse = await _commonService.QueryAsync<DBClass>("MangasProcedures", param, CommandType.StoredProcedure);
@@ -119,7 +225,6 @@ namespace Services
             if (model.File != null && model.File.Length > 0)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
-
                 var fileExtension = Path.GetExtension(model.File.FileName).ToLower();
 
                 if (!allowedExtensions.Contains(fileExtension))
@@ -164,9 +269,14 @@ namespace Services
                     model.Mangaka,
                     MangaFrontImgUrl = uniqueFileName,
                     model.MangaTypeId,
+                    model.DemographyId,
                     model.EditorialName,
                     model.Rating,
-                    model.Hidden
+                    model.Hidden,
+                    model.Status,
+                    model.IsAmateur,
+                    model.IsErotic,
+                    model.IsFeatured
                 };
 
                 IEnumerable<DBClass> dbResponse = await _commonService.QueryAsync<DBClass>("MangasProcedures", param, CommandType.StoredProcedure);

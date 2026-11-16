@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
 using Services.Interfaces;
 using Services;
 using System.Diagnostics;
@@ -42,6 +42,9 @@ namespace MangaProjectApi
             services.AddScoped<IMangasService, MangasService>();
             services.AddScoped<IMangaGenresService, MangaGenresService>();
             services.AddScoped<IMangaChaptersService,  MangaChaptersService>();
+            services.AddScoped<INoticesService, NoticesService>();
+            services.AddScoped<IUserMangaListsService, UserMangaListsService>();
+            services.AddScoped<IForumService, ForumService>();
             // 
             services.AddSwaggerGen(c =>
             {

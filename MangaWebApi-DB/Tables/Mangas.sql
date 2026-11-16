@@ -1,4 +1,4 @@
-﻿CREATE TABLE [dbo].[Mangas]
+CREATE TABLE [dbo].[Mangas]
 (
 	[MangaId] INT NOT NULL PRIMARY KEY IDENTITY, 
     [MangaTittle] VARCHAR(255) NOT NULL, 
@@ -13,6 +13,11 @@
     [EditorialName] VARCHAR(155) NOT NULL, 
     [Rating] DECIMAL(3, 1) NOT NULL DEFAULT 0, 
     [Hidden] BIT NOT NULL DEFAULT 0, 
+    [Status] VARCHAR(50) NOT NULL DEFAULT 'Publishing', 
+    [IsAmateur] BIT NOT NULL DEFAULT 0, 
+    [IsErotic] BIT NOT NULL DEFAULT 0, 
+    [IsFeatured] BIT NOT NULL DEFAULT 0, 
+    [ViewCount] BIGINT NOT NULL DEFAULT 0, 
     CONSTRAINT [FK_Mangas_Users] FOREIGN KEY ([RegisteredBy]) REFERENCES [Users]([UserId]), 
     CONSTRAINT [FK_Mangas_MangaType] FOREIGN KEY ([MangaTypeId]) REFERENCES [Mangastype]([MangaTypeId])
 )
