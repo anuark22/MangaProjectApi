@@ -21,9 +21,10 @@ namespace MangaProjectApi.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult GetNotices(int? noticeId, bool? isActive = true)
+        public IActionResult GetNotices(int? noticeId, bool? isActive = true, bool includeInactive = false)
         {
-            Response<Notices> response = _noticesService.GetNotices(noticeId, isActive);
+            bool? filterActive = includeInactive ? null : isActive;
+            Response<Notices> response = _noticesService.GetNotices(noticeId, filterActive);
             return ResponseHandler(response);
         }
 
@@ -56,6 +57,22 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<Notices> response = await _noticesService.UpdateNotice(model);
+            return ResponseHandler(response);
+        }
+
+        [HttpPatch]
+        [AdminOnly]
+        public async Task<IActionResult> ToggleActive(int noticeId)
+        {
+            Response<Notices> response = await _noticesService.ToggleNoticeActive(noticeId);
+            return ResponseHandler(response);
+        }
+
+        [HttpPatch]
+        [AdminOnly]
+        public async Task<IActionResult> ToggleFeatured(int noticeId)
+        {
+            Response<Notices> response = await _noticesService.ToggleNoticeFeatured(noticeId);
             return ResponseHandler(response);
         }
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Models;
 using Services.Interfaces;
@@ -24,6 +25,42 @@ namespace Services
             _config = config;
         }
 
+        private async Task<(string? fileName, string? error)> SaveUploadedFileAsync(IFormFile? file)
+        {
+            if (file == null || file.Length == 0) return (null, null);
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
+            var fileExtension = Path.GetExtension(file.FileName).ToLower();
+
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return (null, "Solo se permiten imágenes con formato .jpg, .png, .svg y .webp");
+            }
+
+            try
+            {
+                string folderPath = Path.Combine(_env.ContentRootPath, "Files");
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                string uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                string fullFilePath = Path.Combine(folderPath, uniqueFileName);
+
+                using (var stream = new FileStream(fullFilePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                return (uniqueFileName, null);
+            }
+            catch (Exception ex)
+            {
+                return (null, $"Error procesando el archivo en el servidor: {ex.Message}");
+            }
+        }
+
         public Response<Notices> GetNotices(int? noticeId = null, bool? isActive = true)
         {
             Response<Notices> response = new();
@@ -41,6 +78,11 @@ namespace Services
                 {
                     notice.NoticeImgUrl = $"{baseUrl.TrimEnd('/')}/{notice.NoticeImgUrl.TrimStart('/')}";
                 }
+
+                if (!string.IsNullOrEmpty(notice.ExtraImgUrl) && !notice.ExtraImgUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    notice.ExtraImgUrl = $"{baseUrl.TrimEnd('/')}/{notice.ExtraImgUrl.TrimStart('/')}";
+                }
             });
 
             return response;
@@ -49,40 +91,29 @@ namespace Services
         public async Task<Response<Notices>> CreateNotice(NoticeCreateDTO model, int userId)
         {
             Response<Notices> response = new();
-            string? uniqueFileName = null;
 
+            string? uniqueMainFile = null;
             if (model.File != null && model.File.Length > 0)
             {
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
-                var fileExtension = Path.GetExtension(model.File.FileName).ToLower();
-
-                if (!allowedExtensions.Contains(fileExtension))
+                var (fileRes, err) = await SaveUploadedFileAsync(model.File);
+                if (err != null)
                 {
-                    response.ParseExecution(400, "Solo se permiten imágenes con formato .jpg, .png, .svg y .webp");
+                    response.ParseExecution(400, err);
                     return response;
                 }
+                uniqueMainFile = fileRes;
+            }
 
-                try
+            string? uniqueExtraFile = null;
+            if (model.ExtraFile != null && model.ExtraFile.Length > 0)
+            {
+                var (extraRes, errExtra) = await SaveUploadedFileAsync(model.ExtraFile);
+                if (errExtra != null)
                 {
-                    string folderPath = Path.Combine(_env.ContentRootPath, "Files");
-                    if (!Directory.Exists(folderPath))
-                    {
-                        Directory.CreateDirectory(folderPath);
-                    }
-
-                    uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                    string fullFilePath = Path.Combine(folderPath, uniqueFileName);
-
-                    using (var stream = new FileStream(fullFilePath, FileMode.Create))
-                    {
-                        await model.File.CopyToAsync(stream);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    response.ParseExecution(500, $"Error procesando el archivo en el servidor: {ex.Message}");
+                    response.ParseExecution(400, errExtra);
                     return response;
                 }
+                uniqueExtraFile = extraRes;
             }
 
             try
@@ -92,8 +123,15 @@ namespace Services
                 {
                     Action = action,
                     model.Title,
+                    model.Subtitle,
                     model.Content,
-                    NoticeImgUrl = uniqueFileName,
+                    model.Category,
+                    NoticeImgUrl = uniqueMainFile,
+                    ExtraImgUrl = uniqueExtraFile,
+                    model.ImageCaption,
+                    model.Quote,
+                    model.IsFeatured,
+                    model.ReadTime,
                     CreatedBy = userId,
                     model.IsActive
                 };
@@ -120,40 +158,29 @@ namespace Services
         public async Task<Response<Notices>> UpdateNotice(NoticeUpdateDTO model)
         {
             Response<Notices> response = new();
-            string? uniqueFileName = null;
 
+            string? uniqueMainFile = null;
             if (model.File != null && model.File.Length > 0)
             {
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
-                var fileExtension = Path.GetExtension(model.File.FileName).ToLower();
-
-                if (!allowedExtensions.Contains(fileExtension))
+                var (fileRes, err) = await SaveUploadedFileAsync(model.File);
+                if (err != null)
                 {
-                    response.ParseExecution(400, "Solo se permiten imágenes con formato .jpg, .png, .svg y .webp");
+                    response.ParseExecution(400, err);
                     return response;
                 }
+                uniqueMainFile = fileRes;
+            }
 
-                try
+            string? uniqueExtraFile = null;
+            if (model.ExtraFile != null && model.ExtraFile.Length > 0)
+            {
+                var (extraRes, errExtra) = await SaveUploadedFileAsync(model.ExtraFile);
+                if (errExtra != null)
                 {
-                    string folderPath = Path.Combine(_env.ContentRootPath, "Files");
-                    if (!Directory.Exists(folderPath))
-                    {
-                        Directory.CreateDirectory(folderPath);
-                    }
-
-                    uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                    string fullFilePath = Path.Combine(folderPath, uniqueFileName);
-
-                    using (var stream = new FileStream(fullFilePath, FileMode.Create))
-                    {
-                        await model.File.CopyToAsync(stream);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    response.ParseExecution(500, $"Error procesando el nuevo archivo: {ex.Message}");
+                    response.ParseExecution(400, errExtra);
                     return response;
                 }
+                uniqueExtraFile = extraRes;
             }
 
             try
@@ -164,8 +191,15 @@ namespace Services
                     Action = action,
                     model.NoticeId,
                     model.Title,
+                    model.Subtitle,
                     model.Content,
-                    NoticeImgUrl = uniqueFileName,
+                    model.Category,
+                    NoticeImgUrl = uniqueMainFile,
+                    ExtraImgUrl = uniqueExtraFile,
+                    model.ImageCaption,
+                    model.Quote,
+                    model.IsFeatured,
+                    model.ReadTime,
                     model.IsActive
                 };
 
@@ -192,6 +226,46 @@ namespace Services
         {
             Response<Notices> response = new();
             int action = 4;
+            object param = new { Action = action, NoticeId = noticeId };
+
+            IEnumerable<DBClass> dbResponse = await _commonService.QueryAsync<DBClass>("NoticesProcedures", param, CommandType.StoredProcedure);
+            var firstResult = dbResponse.FirstOrDefault();
+            if (firstResult != null)
+            {
+                response.ParseExecution(firstResult.Status, firstResult.ErrorDescription);
+            }
+            else
+            {
+                response.ParseExecution(500, "Unexpected database error");
+            }
+
+            return response;
+        }
+
+        public async Task<Response<Notices>> ToggleNoticeActive(int noticeId)
+        {
+            Response<Notices> response = new();
+            int action = 5;
+            object param = new { Action = action, NoticeId = noticeId };
+
+            IEnumerable<DBClass> dbResponse = await _commonService.QueryAsync<DBClass>("NoticesProcedures", param, CommandType.StoredProcedure);
+            var firstResult = dbResponse.FirstOrDefault();
+            if (firstResult != null)
+            {
+                response.ParseExecution(firstResult.Status, firstResult.ErrorDescription);
+            }
+            else
+            {
+                response.ParseExecution(500, "Unexpected database error");
+            }
+
+            return response;
+        }
+
+        public async Task<Response<Notices>> ToggleNoticeFeatured(int noticeId)
+        {
+            Response<Notices> response = new();
+            int action = 6;
             object param = new { Action = action, NoticeId = noticeId };
 
             IEnumerable<DBClass> dbResponse = await _commonService.QueryAsync<DBClass>("NoticesProcedures", param, CommandType.StoredProcedure);

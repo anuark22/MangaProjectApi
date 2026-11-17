@@ -9,5 +9,7 @@ namespace Services.Interfaces
         Task<Response<Notices>> CreateNotice(NoticeCreateDTO model, int userId);
         Task<Response<Notices>> UpdateNotice(NoticeUpdateDTO model);
         Task<Response<Notices>> DeleteNotice(int noticeId);
+        Task<Response<Notices>> ToggleNoticeActive(int noticeId);
+        Task<Response<Notices>> ToggleNoticeFeatured(int noticeId);
     }
 }
