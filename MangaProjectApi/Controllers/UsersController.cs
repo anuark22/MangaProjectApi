@@ -13,10 +13,21 @@ namespace MangaProjectApi.Controllers
     public class UsersController : HandlerController
     {
         private readonly IUsersService _usersService;
+        private readonly IAntiSpamService _antiSpamService;
 
-        public UsersController(IUsersService usersService)
+        public UsersController(IUsersService usersService, IAntiSpamService antiSpamService)
         {
             _usersService = usersService;
+            _antiSpamService = antiSpamService;
+        }
+
+        private string GetClientIpAddress()
+        {
+            if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwarded) && !string.IsNullOrWhiteSpace(forwarded))
+            {
+                return forwarded.ToString().Split(',')[0].Trim();
+            }
+            return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         }
 
         [HttpGet]
@@ -36,6 +47,28 @@ namespace MangaProjectApi.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Detección de bot automatizado mediante campo trampa honeypot
+            if (_antiSpamService.IsHoneypotTriggered(model.Honeypot))
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = "Solicitud rechazada." });
+            }
+
+            // Flood control: máximo 1 registro cada 10 segundos por IP
+            string clientIp = GetClientIpAddress();
+            var (isRateLimited, secondsRemaining) = _antiSpamService.CheckActionCooldown("register", clientIp, 10);
+            if (isRateLimited)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    Status = 429,
+                    Error = true,
+                    SecondsRemaining = secondsRemaining,
+                    ErrorDescription = $"Por favor espera {secondsRemaining} segundos antes de enviar otro registro."
+                });
+            }
+
+            _antiSpamService.RecordAction("register", clientIp);
+
             Response<Users> users = await _usersService.InsertRegister(model);
             return ResponseHandler(users);
         }
@@ -49,7 +82,50 @@ namespace MangaProjectApi.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Detección de bot automatizado mediante campo trampa honeypot
+            if (_antiSpamService.IsHoneypotTriggered(model.Honeypot))
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = "Solicitud rechazada." });
+            }
+
+            string clientIp = GetClientIpAddress();
+
+            // Protección de fuerza bruta / Bloqueo temporal de intentos de login
+            var (isBlocked, secondsRemaining, attemptCount) = _antiSpamService.CheckLoginThrottle(clientIp, model.Email);
+            if (isBlocked)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    Status = 429,
+                    Error = true,
+                    SecondsRemaining = secondsRemaining,
+                    ErrorDescription = $"Demasiados intentos fallidos. Tu acceso está temporalmente pausado por seguridad. Intenta de nuevo en {secondsRemaining} segundos."
+                });
+            }
+
             Response<UsersDTO> users = _usersService.Login(model);
+
+            // Verificación del resultado del login
+            if (users.Status != 200 || users.Error || users.Items == null || !users.Items.Any())
+            {
+                var (isNowBlocked, lockoutSeconds) = _antiSpamService.RecordFailedLogin(clientIp, model.Email);
+                if (isNowBlocked)
+                {
+                    return StatusCode(StatusCodes.Status429TooManyRequests, new
+                    {
+                        Status = 429,
+                        Error = true,
+                        SecondsRemaining = lockoutSeconds,
+                        ErrorDescription = $"Has superado el número máximo de intentos permitidos. Por seguridad, tu acceso ha sido suspendido por {lockoutSeconds} segundos."
+                    });
+                }
+            }
+            else
+            {
+                // Login exitoso: restablecer intentos
+                _antiSpamService.ResetLoginAttempts(clientIp, model.Email);
+            }
+
             return ResponseHandler(users);
         }
 
@@ -110,6 +186,27 @@ namespace MangaProjectApi.Controllers
             {
                 return BadRequest(ModelState);
             }
+
+            if (_antiSpamService.IsHoneypotTriggered(model.Honeypot))
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = "Solicitud rechazada." });
+            }
+
+            string clientIp = GetClientIpAddress();
+            string spamKey = $"{clientIp}:{model.Email?.Trim().ToLowerInvariant()}";
+            var (isRateLimited, secondsRemaining) = _antiSpamService.CheckActionCooldown("forgot_password", spamKey, 30);
+            if (isRateLimited)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    Status = 429,
+                    Error = true,
+                    SecondsRemaining = secondsRemaining,
+                    ErrorDescription = $"Por favor espera {secondsRemaining} segundos antes de solicitar otro correo de recuperación."
+                });
+            }
+
+            _antiSpamService.RecordAction("forgot_password", spamKey);
 
             Response<Users> response = await _usersService.ForgotPassword(model);
             return ResponseHandler(response);

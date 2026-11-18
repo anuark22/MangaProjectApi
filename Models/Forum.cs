@@ -45,6 +45,7 @@ namespace Models
         public string Content { get; set; } = string.Empty;
         public string Topic { get; set; } = string.Empty;
         public string SubTopic { get; set; } = string.Empty;
+        public string? Honeypot { get; set; }
     }
 
     public class UpdateForumPostDTO
@@ -60,5 +61,6 @@ namespace Models
     {
         public int PostId { get; set; }
         public string Content { get; set; } = string.Empty;
+        public string? Honeypot { get; set; }
     }
 }
