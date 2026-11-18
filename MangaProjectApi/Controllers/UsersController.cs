@@ -53,8 +53,16 @@ namespace MangaProjectApi.Controllers
                 return BadRequest(new { Status = 400, Error = true, ErrorDescription = "Solicitud rechazada." });
             }
 
-            // Flood control: máximo 1 registro cada 10 segundos por IP
             string clientIp = GetClientIpAddress();
+
+            // Validación de Google reCAPTCHA v3 (si está habilitado en configuración)
+            var (recaptchaValid, recaptchaScore, recaptchaError) = await _antiSpamService.ValidateRecaptchaV3Async(model.RecaptchaToken, "register", clientIp);
+            if (!recaptchaValid)
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = recaptchaError ?? "Verificación de reCAPTCHA fallida." });
+            }
+
+            // Flood control: máximo 1 registro cada 10 segundos por IP
             var (isRateLimited, secondsRemaining) = _antiSpamService.CheckActionCooldown("register", clientIp, 10);
             if (isRateLimited)
             {
@@ -75,7 +83,7 @@ namespace MangaProjectApi.Controllers
 
         [HttpPost]
         [AllowAnonymous]
-        public IActionResult Login([FromBody] Models.UsersDTO model)
+        public async Task<IActionResult> Login([FromBody] Models.UsersDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -89,6 +97,13 @@ namespace MangaProjectApi.Controllers
             }
 
             string clientIp = GetClientIpAddress();
+
+            // Validación de Google reCAPTCHA v3 (si está habilitado en configuración)
+            var (recaptchaValid, recaptchaScore, recaptchaError) = await _antiSpamService.ValidateRecaptchaV3Async(model.RecaptchaToken, "login", clientIp);
+            if (!recaptchaValid)
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = recaptchaError ?? "Verificación de reCAPTCHA fallida." });
+            }
 
             // Protección de fuerza bruta / Bloqueo temporal de intentos de login
             var (isBlocked, secondsRemaining, attemptCount) = _antiSpamService.CheckLoginThrottle(clientIp, model.Email);
@@ -193,6 +208,14 @@ namespace MangaProjectApi.Controllers
             }
 
             string clientIp = GetClientIpAddress();
+
+            // Validación de Google reCAPTCHA v3
+            var (recaptchaValid, recaptchaScore, recaptchaError) = await _antiSpamService.ValidateRecaptchaV3Async(model.RecaptchaToken, "forgot_password", clientIp);
+            if (!recaptchaValid)
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = recaptchaError ?? "Verificación de reCAPTCHA fallida." });
+            }
+
             string spamKey = $"{clientIp}:{model.Email?.Trim().ToLowerInvariant()}";
             var (isRateLimited, secondsRemaining) = _antiSpamService.CheckActionCooldown("forgot_password", spamKey, 30);
             if (isRateLimited)

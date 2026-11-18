@@ -1,14 +1,19 @@
+using Microsoft.Extensions.Configuration;
 using Services.Interfaces;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Services
 {
     /// <summary>
-    /// Servicio de protección anti-spam y limitación de tasa diseñado para alto tráfico concurrente.
+    /// Servicio de protección anti-spam, limitación de tasa y validación de Google reCAPTCHA v3.
     /// Opera de forma estrictamente individual (por usuario/cuenta/IP) sin bloquear a otros usuarios legítimos.
     /// Implementa recolección y poda periódica automática para mantener el consumo de memoria en niveles mínimos.
     /// </summary>
@@ -26,6 +31,9 @@ namespace Services
             public string ContentHash { get; set; } = string.Empty;
             public DateTimeOffset Timestamp { get; set; }
         }
+
+        private readonly IConfiguration _config;
+        private static readonly HttpClient _httpClient = new();
 
         // Almacén seguro para intentos de login por clave combinada INDIVIDUAL (IP + Email)
         private readonly ConcurrentDictionary<string, LoginAttemptRecord> _loginAttempts = new(StringComparer.OrdinalIgnoreCase);
@@ -47,8 +55,9 @@ namespace Services
         private const int ExtendedLockoutSeconds = 300; // 5 minutos tras 8+ intentos
         private const int MaxEntriesThreshold = 50000;  // Techo máximo de seguridad contra ataques de memoria
 
-        public AntiSpamService()
+        public AntiSpamService(IConfiguration config)
         {
+            _config = config;
             // Ejecutar poda de memoria cada 2 minutos en segundo plano
             _cleanupTimer = new Timer(PruneExpiredRecords, null, TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(2));
         }
@@ -258,6 +267,88 @@ namespace Services
             using var sha = SHA256.Create();
             byte[] bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
             return Convert.ToBase64String(bytes);
+        }
+
+        /// <summary>
+        /// Valida el token de Google reCAPTCHA v3 llamando al endpoint https://www.google.com/recaptcha/api/siteverify.
+        /// Si está deshabilitado en appsettings.json (Captcha:Enabled = false), permite el acceso en desarrollo.
+        /// </summary>
+        public async Task<(bool IsValid, double Score, string? ErrorMessage)> ValidateRecaptchaV3Async(string? token, string? expectedAction = null, string? clientIp = null)
+        {
+            bool isEnabled = bool.TryParse(_config["Captcha:Enabled"], out bool en) && en;
+            string? secretKey = _config["Captcha:Secret"];
+
+            // Si reCAPTCHA no está habilitado o la clave secreta no está configurada, permitir paso (entorno desarrollo)
+            if (!isEnabled || string.IsNullOrWhiteSpace(secretKey))
+            {
+                return (true, 1.0, null);
+            }
+
+            // Si está habilitado pero no se envió token
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return (false, 0.0, "Verificación de reCAPTCHA requerida.");
+            }
+
+            try
+            {
+                var parameters = new Dictionary<string, string>
+                {
+                    { "secret", secretKey.Trim() },
+                    { "response", token.Trim() }
+                };
+
+                if (!string.IsNullOrWhiteSpace(clientIp) && clientIp != "unknown")
+                {
+                    parameters.Add("remoteip", clientIp.Trim());
+                }
+
+                using var content = new FormUrlEncodedContent(parameters);
+                using var response = await _httpClient.PostAsync("https://www.google.com/recaptcha/api/siteverify", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return (false, 0.0, "Error de comunicación con el servicio de reCAPTCHA.");
+                }
+
+                var jsonString = await response.Content.ReadAsStringAsync();
+                using var jsonDoc = JsonDocument.Parse(jsonString);
+                var root = jsonDoc.RootElement;
+
+                bool success = root.TryGetProperty("success", out var successProp) && successProp.GetBoolean();
+                if (!success)
+                {
+                    return (false, 0.0, "Validación de reCAPTCHA fallida. Por favor intenta de nuevo.");
+                }
+
+                double score = 1.0;
+                if (root.TryGetProperty("score", out var scoreProp))
+                {
+                    score = scoreProp.GetDouble();
+                }
+
+                double minScore = double.TryParse(_config["Captcha:MinScore"], out double ms) ? ms : 0.5;
+
+                if (score < minScore)
+                {
+                    return (false, score, "Puntuación de seguridad baja. Acción bloqueada por sospecha de bot.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(expectedAction) && root.TryGetProperty("action", out var actionProp))
+                {
+                    string receivedAction = actionProp.GetString() ?? "";
+                    if (!string.Equals(receivedAction, expectedAction, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, score, "Acción de reCAPTCHA no coincide.");
+                    }
+                }
+
+                return (true, score, null);
+            }
+            catch (Exception ex)
+            {
+                return (false, 0.0, $"Error al verificar reCAPTCHA: {ex.Message}");
+            }
         }
 
         public void Dispose()

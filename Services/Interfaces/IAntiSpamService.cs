@@ -38,5 +38,11 @@ namespace Services.Interfaces
         /// Comprueba si el usuario está enviando exactamente el mismo contenido repetido en una ventana de tiempo corta.
         /// </summary>
         bool IsDuplicateContent(string userIdentifier, string content, int windowSeconds = 60);
+
+        /// <summary>
+        /// Valida el token de Google reCAPTCHA v3 contra la API de Google.
+        /// Retorna éxito si reCAPTCHA está deshabilitado en configuración (entorno local).
+        /// </summary>
+        System.Threading.Tasks.Task<(bool IsValid, double Score, string? ErrorMessage)> ValidateRecaptchaV3Async(string? token, string? expectedAction = null, string? clientIp = null);
     }
 }

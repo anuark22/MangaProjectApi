@@ -23,6 +23,7 @@ namespace Models
         public int? IsOwnerRole { get; set; }
         public int? PaginationCount { get; set; } = null;
         public string? Honeypot { get; set; }
+        public string? RecaptchaToken { get; set; }
     }
 
     public class UsersDTO
@@ -35,6 +36,7 @@ namespace Models
         public string? Token { get; set; }
         public int? IsBlocked { get; set; }
         public string? Honeypot { get; set; }
+        public string? RecaptchaToken { get; set; }
     }
 
     public class UserProfileDTO
@@ -78,6 +80,7 @@ namespace Models
         [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido")]
         public string Email { get; set; } = string.Empty;
         public string? Honeypot { get; set; }
+        public string? RecaptchaToken { get; set; }
     }
 
     public class ValidateTokenDTO
