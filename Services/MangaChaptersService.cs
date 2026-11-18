@@ -80,7 +80,7 @@ namespace Services
                 return response;
             }
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 
             // 1. Validar extensiones de todas las páginas antes de procesar
             foreach (var file in model.Files)
