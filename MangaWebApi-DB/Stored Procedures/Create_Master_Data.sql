@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE [dbo].[Create_Master_Data]
+CREATE PROCEDURE [dbo].[Create_Master_Data]
 AS
 BEGIN
 	-- -------------------------------------------------------------------------
