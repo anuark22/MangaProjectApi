@@ -225,5 +225,46 @@ BEGIN
         END CATCH
         RETURN;
     END
+
+    -- =========================================================================
+    -- ACTION 5: SELECT Reports & Warnings for Scan Group Owner / Member
+    -- (No expone datos personales del usuario que reportó para privacidad)
+    -- =========================================================================
+    IF @Action = 5
+    BEGIN
+        SELECT
+            cr.[ReportId],
+            cr.[ChapterId],
+            cr.[ChapterNumber],
+            cr.[ChapterTitle],
+            cr.[MangaId],
+            m.[MangaTittle],
+            cr.[ScanId],
+            sg.[ScanName],
+            cr.[Reason],
+            cr.[Description],
+            cr.[Status],
+            cr.[AdminNotes],
+            cr.[ActionTaken],
+            rev.[Username] AS [ReviewerUsername],
+            cr.[ReviewedAt],
+            cr.[CreatedAt],
+            CAST(CASE WHEN mc.[ChapterId] IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS [ChapterExists]
+        FROM [dbo].[ChapterReports] cr
+        INNER JOIN [dbo].[Mangas] m ON cr.[MangaId] = m.[MangaId]
+        INNER JOIN [dbo].[ScansGroups] sg ON cr.[ScanId] = sg.[ScanId]
+        LEFT JOIN [dbo].[Users] rev ON cr.[ReviewedBy] = rev.[UserId]
+        LEFT JOIN [dbo].[MangaChapters] mc ON cr.[ChapterId] = mc.[ChapterId]
+        WHERE (
+            sg.[CreatedBy] = @UserId
+            OR cr.[ScanId] IN (SELECT [ScanId] FROM [dbo].[Users] WHERE [UserId] = @UserId AND [ScanId] IS NOT NULL)
+            OR (@ScanId IS NOT NULL AND cr.[ScanId] = @ScanId)
+        )
+        AND cr.[Status] <> 'DISMISSED'
+        ORDER BY
+            CASE WHEN cr.[ActionTaken] = 'SCAN_WARNED' THEN 0 WHEN cr.[Status] = 'PENDING' THEN 1 ELSE 2 END,
+            cr.[CreatedAt] DESC;
+        RETURN;
+    END
 END
 RETURN 0;

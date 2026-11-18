@@ -33,6 +33,22 @@ namespace MangaProjectApi.Controllers
         }
 
         /// <summary>
+        /// Permite al Scan Group autenticado consultar los reportes y advertencias de auditoría sobre sus capítulos.
+        /// </summary>
+        [HttpGet]
+        public IActionResult GetMyScanReports(int? scanId = null)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
+            }
+
+            Response<ChapterReport> response = _service.GetMyScanReports(userId, scanId);
+            return ResponseHandler(response);
+        }
+
+        /// <summary>
         /// Permite al usuario autenticado verificar si ya reportó un capítulo específico antes de abrir/enviar un nuevo reporte.
         /// </summary>
         [HttpGet]

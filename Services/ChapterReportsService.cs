@@ -32,6 +32,21 @@ namespace Services
             return response;
         }
 
+        public Response<ChapterReport> GetMyScanReports(int userId, int? scanId = null)
+        {
+            Response<ChapterReport> response = new();
+            object param = new
+            {
+                Action = 5,
+                UserId = userId,
+                ScanId = scanId
+            };
+
+            response.Items = _commonService.Query<ChapterReport>("ChapterReportsProcedures", param, CommandType.StoredProcedure);
+            response.ParseResponse(true);
+            return response;
+        }
+
         public Response<ChapterReport> GetMyReportForChapter(int chapterId, int userId)
         {
             Response<ChapterReport> response = new();
