@@ -48,6 +48,7 @@ namespace MangaProjectApi
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IRolesService, RolesService>();
             services.AddScoped<IScanGroupApplicationsService, ScanGroupApplicationsService>();
+            services.AddScoped<IChapterReportsService, ChapterReportsService>();
             services.AddScoped<IImageStorageService, ImageStorageService>();
             services.AddSingleton<IAntiSpamService, AntiSpamService>();
             // 
