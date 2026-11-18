@@ -16,12 +16,14 @@ namespace Services
         private readonly ICommonService _commonService;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
+        private readonly IImageStorageService _imageStorageService;
 
-        public MangaChaptersService(ICommonService commonService, IWebHostEnvironment env, IConfiguration config)
+        public MangaChaptersService(ICommonService commonService, IWebHostEnvironment env, IConfiguration config, IImageStorageService imageStorageService)
         {
             _commonService = commonService;
             _env = env;
             _config = config;
+            _imageStorageService = imageStorageService;
         }
 
         public Response<MangaChapters> GetMangaChapters(int? chapterId = null, int? mangaId = null)
@@ -129,24 +131,11 @@ namespace Services
                 // Capturamos correctamente el ID generado por SCOPE_IDENTITY()
                 int newChapterId = Convert.ToInt32(firstResult.NewChapterId);
 
-                // 3. Procesar y guardar físicamente las páginas en la carpeta "Files/Chapters"
-                string folderPath = Path.Combine(_env.ContentRootPath, "Files", "Chapters");
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
-
+                // 3. Procesar, optimizar a .webp y guardar las páginas en la subcarpeta "Files/Chapters"
                 int pageNumber = 1;
                 foreach (var file in model.Files)
                 {
-                    var fileExtension = Path.GetExtension(file.FileName).ToLower();
-                    string uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                    string fullFilePath = Path.Combine(folderPath, uniqueFileName);
-
-                    using (var stream = new FileStream(fullFilePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
+                    string uniqueFileName = await _imageStorageService.SaveImageAsWebpAsync(file, "Chapters", quality: 80);
 
                     // 4. Registrar cada página en la tabla MangaPages
                     object pageParam = new
@@ -156,7 +145,6 @@ namespace Services
                         PageImgUrl = $"Chapters/{uniqueFileName}"
                     };
 
-                    // Puedes ejecutar una inserción directa con _commonService
                     await _commonService.QueryAsync<dynamic>("INSERT INTO [dbo].[MangaPages] ([ChapterId], [PageNumber], [PageImgUrl]) VALUES (@ChapterId, @PageNumber, @PageImgUrl)", pageParam, CommandType.Text);
                 }
 

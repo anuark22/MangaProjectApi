@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[Create_Master_Data]
+CREATE OR ALTER PROCEDURE [dbo].[Create_Master_Data]
 AS
 BEGIN
 	-- -------------------------------------------------------------------------
@@ -50,37 +50,37 @@ BEGIN
 		WHERE RoleId = 3
 
 	-- -------------------------------------------------------------------------
-	-- ACTUALIZACIÓN DE IMÁGENES DE GÉNEROS
+	-- ACTUALIZACIÓN DE IMÁGENES DE GÉNEROS (.WEBP OPTIMIZADO)
 	-- -------------------------------------------------------------------------
-	UPDATE Genres SET GenreImgUrl = 'genre_shounen.png' WHERE GenreName = 'Shounen';
-	UPDATE Genres SET GenreImgUrl = 'genre_action.png' WHERE GenreName = 'Action';
-	UPDATE Genres SET GenreImgUrl = 'genre_adventure.png' WHERE GenreName = 'Adventure';
-	UPDATE Genres SET GenreImgUrl = 'genre_comedy.png' WHERE GenreName = 'Comedy';
-	UPDATE Genres SET GenreImgUrl = 'genre_drama.png' WHERE GenreName = 'Drama';
-	UPDATE Genres SET GenreImgUrl = 'genre_slice_of_life.png' WHERE GenreName = 'Slice of Life';
-	UPDATE Genres SET GenreImgUrl = 'genre_fantasy.png' WHERE GenreName = 'Fantasy';
-	UPDATE Genres SET GenreImgUrl = 'genre_magic.png' WHERE GenreName = 'Magic';
-	UPDATE Genres SET GenreImgUrl = 'genre_supernatural.png' WHERE GenreName = 'Supernatural';
-	UPDATE Genres SET GenreImgUrl = 'genre_horror.png' WHERE GenreName = 'Horror';
-	UPDATE Genres SET GenreImgUrl = 'genre_mystery.png' WHERE GenreName = 'Mystery';
-	UPDATE Genres SET GenreImgUrl = 'genre_psychological.png' WHERE GenreName = 'Psychological';
-	UPDATE Genres SET GenreImgUrl = 'genre_romance.png' WHERE GenreName = 'Romance';
-	UPDATE Genres SET GenreImgUrl = 'genre_sci_fi.png' WHERE GenreName = 'Sci-Fi';
-	UPDATE Genres SET GenreImgUrl = 'genre_thriller.png' WHERE GenreName = 'Thriller';
-	UPDATE Genres SET GenreImgUrl = 'genre_sports.png' WHERE GenreName = 'Sports';
-	UPDATE Genres SET GenreImgUrl = 'genre_superpowers.png' WHERE GenreName = 'Superpowers';
-	UPDATE Genres SET GenreImgUrl = 'genre_martial_arts.png' WHERE GenreName = 'Martial Arts';
-	UPDATE Genres SET GenreImgUrl = 'genre_reincarnation.png' WHERE GenreName = 'Reincarnation';
-	UPDATE Genres SET GenreImgUrl = 'genre_isekai.png' WHERE GenreName = 'Isekai';
-	UPDATE Genres SET GenreImgUrl = 'genre_school_life.png' WHERE GenreName = 'School Life';
-	UPDATE Genres SET GenreImgUrl = 'genre_mecha.png' WHERE GenreName = 'Mecha';
-	UPDATE Genres SET GenreImgUrl = 'genre_demons.png' WHERE GenreName = 'Demons';
+	UPDATE Genres SET GenreImgUrl = 'genre_shounen.webp' WHERE GenreName = 'Shounen';
+	UPDATE Genres SET GenreImgUrl = 'genre_action.webp' WHERE GenreName = 'Action';
+	UPDATE Genres SET GenreImgUrl = 'genre_adventure.webp' WHERE GenreName = 'Adventure';
+	UPDATE Genres SET GenreImgUrl = 'genre_comedy.webp' WHERE GenreName = 'Comedy';
+	UPDATE Genres SET GenreImgUrl = 'genre_drama.webp' WHERE GenreName = 'Drama';
+	UPDATE Genres SET GenreImgUrl = 'genre_slice_of_life.webp' WHERE GenreName = 'Slice of Life';
+	UPDATE Genres SET GenreImgUrl = 'genre_fantasy.webp' WHERE GenreName = 'Fantasy';
+	UPDATE Genres SET GenreImgUrl = 'genre_magic.webp' WHERE GenreName = 'Magic';
+	UPDATE Genres SET GenreImgUrl = 'genre_supernatural.webp' WHERE GenreName = 'Supernatural';
+	UPDATE Genres SET GenreImgUrl = 'genre_horror.webp' WHERE GenreName = 'Horror';
+	UPDATE Genres SET GenreImgUrl = 'genre_mystery.webp' WHERE GenreName = 'Mystery';
+	UPDATE Genres SET GenreImgUrl = 'genre_psychological.webp' WHERE GenreName = 'Psychological';
+	UPDATE Genres SET GenreImgUrl = 'genre_romance.webp' WHERE GenreName = 'Romance';
+	UPDATE Genres SET GenreImgUrl = 'genre_sci_fi.webp' WHERE GenreName = 'Sci-Fi';
+	UPDATE Genres SET GenreImgUrl = 'genre_thriller.webp' WHERE GenreName = 'Thriller';
+	UPDATE Genres SET GenreImgUrl = 'genre_sports.webp' WHERE GenreName = 'Sports';
+	UPDATE Genres SET GenreImgUrl = 'genre_superpowers.webp' WHERE GenreName = 'Superpowers';
+	UPDATE Genres SET GenreImgUrl = 'genre_martial_arts.webp' WHERE GenreName = 'Martial Arts';
+	UPDATE Genres SET GenreImgUrl = 'genre_reincarnation.webp' WHERE GenreName = 'Reincarnation';
+	UPDATE Genres SET GenreImgUrl = 'genre_isekai.webp' WHERE GenreName = 'Isekai';
+	UPDATE Genres SET GenreImgUrl = 'genre_school_life.webp' WHERE GenreName = 'School Life';
+	UPDATE Genres SET GenreImgUrl = 'genre_mecha.webp' WHERE GenreName = 'Mecha';
+	UPDATE Genres SET GenreImgUrl = 'genre_demons.webp' WHERE GenreName = 'Demons';
 
 	-- -------------------------------------------------------------------------
-	-- ACTUALIZACIÓN DE IMÁGENES DE NOTICIAS
+	-- ACTUALIZACIÓN DE IMÁGENES DE NOTICIAS (.WEBP OPTIMIZADO)
 	-- -------------------------------------------------------------------------
-	UPDATE Notices SET NoticeImgUrl = 'notice_one_piece.png' WHERE NoticeId = 1;
-	UPDATE Notices SET NoticeImgUrl = 'notice_chainsaw_man.png' WHERE NoticeId = 2;
-	UPDATE Notices SET NoticeImgUrl = 'notice_jujutsu_kaisen.png' WHERE NoticeId = 3;
-	UPDATE Notices SET NoticeImgUrl = 'notice_my_hero_academia.png' WHERE NoticeId = 4;
+	UPDATE Notices SET NoticeImgUrl = 'notice_one_piece.webp' WHERE NoticeId = 1;
+	UPDATE Notices SET NoticeImgUrl = 'notice_chainsaw_man.webp' WHERE NoticeId = 2;
+	UPDATE Notices SET NoticeImgUrl = 'notice_jujutsu_kaisen.webp' WHERE NoticeId = 3;
+	UPDATE Notices SET NoticeImgUrl = 'notice_my_hero_academia.webp' WHERE NoticeId = 4;
 END

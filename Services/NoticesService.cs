@@ -17,47 +17,28 @@ namespace Services
         private readonly ICommonService _commonService;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
+        private readonly IImageStorageService _imageStorageService;
 
-        public NoticesService(ICommonService commonService, IWebHostEnvironment env, IConfiguration config)
+        public NoticesService(ICommonService commonService, IWebHostEnvironment env, IConfiguration config, IImageStorageService imageStorageService)
         {
             _commonService = commonService;
             _env = env;
             _config = config;
+            _imageStorageService = imageStorageService;
         }
 
         private async Task<(string? fileName, string? error)> SaveUploadedFileAsync(IFormFile? file)
         {
             if (file == null || file.Length == 0) return (null, null);
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
-            var fileExtension = Path.GetExtension(file.FileName).ToLower();
-
-            if (!allowedExtensions.Contains(fileExtension))
-            {
-                return (null, "Solo se permiten imágenes con formato .jpg, .png, .svg y .webp");
-            }
-
             try
             {
-                string folderPath = Path.Combine(_env.ContentRootPath, "Files");
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
-
-                string uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                string fullFilePath = Path.Combine(folderPath, uniqueFileName);
-
-                using (var stream = new FileStream(fullFilePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
+                string uniqueFileName = await _imageStorageService.SaveImageAsWebpAsync(file);
                 return (uniqueFileName, null);
             }
             catch (Exception ex)
             {
-                return (null, $"Error procesando el archivo en el servidor: {ex.Message}");
+                return (null, $"Error procesando la imagen: {ex.Message}");
             }
         }
 

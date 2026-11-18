@@ -16,12 +16,14 @@ namespace Services
         private readonly ICommonService _commonService;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
+        private readonly IImageStorageService _imageStorageService;
 
-        public ScanGroupApplicationsService(ICommonService commonService, IWebHostEnvironment env, IConfiguration config)
+        public ScanGroupApplicationsService(ICommonService commonService, IWebHostEnvironment env, IConfiguration config, IImageStorageService imageStorageService)
         {
             _commonService = commonService;
             _env = env;
             _config = config;
+            _imageStorageService = imageStorageService;
         }
 
         public Response<ScanGroupApplication> GetApplications(string? status = null, int? applicationId = null)
@@ -62,38 +64,17 @@ namespace Services
         public async Task<Response<ScanGroupApplication>> Apply(ScanGroupApplyDTO model, int userId)
         {
             Response<ScanGroupApplication> response = new();
-            string fileName = "default-scan.png";
+            string fileName = "default-scan.webp";
 
             if (model.File != null && model.File.Length > 0)
             {
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg", ".webp" };
-                var fileExtension = Path.GetExtension(model.File.FileName).ToLower();
-
-                if (!allowedExtensions.Contains(fileExtension))
-                {
-                    response.ParseExecution(400, "Solo se permiten imágenes con formato .jpg, .jpeg, .png, .svg y .webp");
-                    return response;
-                }
-
                 try
                 {
-                    string folderPath = Path.Combine(_env.ContentRootPath, "Files");
-                    if (!Directory.Exists(folderPath))
-                    {
-                        Directory.CreateDirectory(folderPath);
-                    }
-
-                    fileName = $"{Guid.NewGuid()}{fileExtension}";
-                    string fullFilePath = Path.Combine(folderPath, fileName);
-
-                    using (var stream = new FileStream(fullFilePath, FileMode.Create))
-                    {
-                        await model.File.CopyToAsync(stream);
-                    }
+                    fileName = await _imageStorageService.SaveImageAsWebpAsync(model.File);
                 }
                 catch (Exception ex)
                 {
-                    response.ParseExecution(500, $"Error al guardar el archivo del logo: {ex.Message}");
+                    response.ParseExecution(400, $"Error al procesar el archivo del logo: {ex.Message}");
                     return response;
                 }
             }
