@@ -99,5 +99,43 @@ namespace Services
 
             return response;
         }
+
+        public Response<UserReadChapterDTO> GetReadChapters(int userId, int? mangaId = null)
+        {
+            Response<UserReadChapterDTO> response = new();
+            object param = new { Action = 1, UserId = userId, MangaId = mangaId };
+            response.Items = _commonService.Query<UserReadChapterDTO>("UserReadChaptersProcedures", param, CommandType.StoredProcedure);
+            response.ParseResponse(true);
+            return response;
+        }
+
+        public async Task<Response<UserReadChapterDTO>> MarkChapterAsRead(int userId, int mangaId, int chapterId)
+        {
+            Response<UserReadChapterDTO> response = new();
+            object param = new { Action = 2, UserId = userId, MangaId = mangaId, ChapterId = chapterId };
+            var rows = await _commonService.QueryAsync<UserReadChapterDTO>("UserReadChaptersProcedures", param, CommandType.StoredProcedure);
+            response.Items = rows.ToList();
+            response.ParseResponse(true);
+            return response;
+        }
+
+        public async Task<Response<DBClass>> UnmarkChapterAsRead(int userId, int chapterId)
+        {
+            Response<DBClass> response = new();
+            object param = new { Action = 3, UserId = userId, ChapterId = chapterId };
+            var rows = await _commonService.QueryAsync<DBClass>("UserReadChaptersProcedures", param, CommandType.StoredProcedure);
+            var first = rows.FirstOrDefault();
+            response.ParseExecution(first?.Status ?? 200, first?.ErrorDescription);
+            return response;
+        }
+
+        public Response<UserMangaProgressDTO> GetMyReadingProgress(int userId)
+        {
+            Response<UserMangaProgressDTO> response = new();
+            object param = new { Action = 4, UserId = userId };
+            response.Items = _commonService.Query<UserMangaProgressDTO>("UserReadChaptersProcedures", param, CommandType.StoredProcedure);
+            response.ParseResponse(true);
+            return response;
+        }
     }
 }

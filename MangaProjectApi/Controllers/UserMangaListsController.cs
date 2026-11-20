@@ -75,5 +75,57 @@ namespace MangaProjectApi.Controllers
             Response<UserMangaStatusCheckDTO> response = _userMangaListsService.CheckMangaInList(mangaId, userId);
             return ResponseHandler(response);
         }
+
+        [HttpGet]
+        public IActionResult GetReadChapters(int? mangaId = null)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
+            }
+
+            Response<UserReadChapterDTO> response = _userMangaListsService.GetReadChapters(userId, mangaId);
+            return ResponseHandler(response);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkChapterRead(int mangaId, int chapterId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
+            }
+
+            Response<UserReadChapterDTO> response = await _userMangaListsService.MarkChapterAsRead(userId, mangaId, chapterId);
+            return ResponseHandler(response);
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> UnmarkChapterRead(int chapterId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
+            }
+
+            Response<DBClass> response = await _userMangaListsService.UnmarkChapterAsRead(userId, chapterId);
+            return ResponseHandler(response);
+        }
+
+        [HttpGet]
+        public IActionResult GetMyReadingProgress()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
+            }
+
+            Response<UserMangaProgressDTO> response = _userMangaListsService.GetMyReadingProgress(userId);
+            return ResponseHandler(response);
+        }
     }
 }

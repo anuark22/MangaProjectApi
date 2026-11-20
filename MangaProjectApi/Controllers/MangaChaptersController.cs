@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MangaProjectApi.CustomMiddleware;
 using Models;
 using Services.Interfaces;
+using System.Data;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,12 +17,24 @@ namespace MangaProjectApi.Controllers
     public class MangaChaptersController : HandlerController
     {
         private readonly IMangaChaptersService _mangaChaptersService;
+        private readonly ICommonService _commonService;
         private readonly IWebHostEnvironment _env;
 
-        public MangaChaptersController(IMangaChaptersService mangaChaptersService, IWebHostEnvironment env)
+        public MangaChaptersController(IMangaChaptersService mangaChaptersService, ICommonService commonService, IWebHostEnvironment env)
         {
             _mangaChaptersService = mangaChaptersService;
+            _commonService = commonService;
             _env = env;
+        }
+
+        private int? ResolveUserScanId(int userId)
+        {
+            const string sql = @"
+                SELECT TOP 1 COALESCE(u.ScanId, sg.ScanId)
+                FROM [dbo].[Users] u
+                LEFT JOIN [dbo].[ScansGroups] sg ON sg.[CreatedBy] = u.[UserId]
+                WHERE u.[UserId] = @UserId";
+            return _commonService.Query<int?>(sql, new { UserId = userId }, CommandType.Text).FirstOrDefault();
         }
 
         [HttpGet]
@@ -53,6 +68,36 @@ namespace MangaProjectApi.Controllers
                 return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
             }
 
+            var userInfo = HttpContext.Items["Client"] as UsersDTO;
+            bool isAdmin = userInfo?.RoleId == (int)RolesEnum.Admin;
+
+            // Los usuarios Scan solo pueden subir capítulos bajo su propio Grupo Scan asignado
+            if (!isAdmin)
+            {
+                int? myScanId = ResolveUserScanId(userId);
+                if (!myScanId.HasValue || myScanId.Value <= 0)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        Status = 403,
+                        Error = true,
+                        ErrorDescription = "No tienes un Grupo Scan asignado para publicar capítulos."
+                    });
+                }
+
+                if (model.ScanId > 0 && model.ScanId != myScanId.Value)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        Status = 403,
+                        Error = true,
+                        ErrorDescription = "Solo puedes subir capítulos a nombre de tu propio Grupo Scan."
+                    });
+                }
+
+                model.ScanId = myScanId.Value;
+            }
+
             Response<MangaChapters> response = await _mangaChaptersService.CreateMangaChapter(model, userId);
             return ResponseHandler(response);
         }
@@ -66,6 +111,25 @@ namespace MangaProjectApi.Controllers
                 return BadRequest(ModelState);
             }
 
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            var userInfo = HttpContext.Items["Client"] as UsersDTO;
+            bool isAdmin = userInfo?.RoleId == (int)RolesEnum.Admin;
+
+            if (!isAdmin && userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                int? myScanId = ResolveUserScanId(userId);
+                var existing = _mangaChaptersService.GetMangaChapters(model.ChapterId, null)?.Items?.FirstOrDefault();
+                if (existing != null && (!myScanId.HasValue || existing.ScanId != myScanId.Value))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        Status = 403,
+                        Error = true,
+                        ErrorDescription = "Solo puedes editar capítulos pertenecientes a tu propio Grupo Scan."
+                    });
+                }
+            }
+
             Response<MangaChapters> response = await _mangaChaptersService.UpdateMangaChapter(model);
             return ResponseHandler(response);
         }
@@ -74,6 +138,25 @@ namespace MangaProjectApi.Controllers
         [AdminOnly]
         public async Task<IActionResult> DeleteMangaChapter(int chapterId)
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            var userInfo = HttpContext.Items["Client"] as UsersDTO;
+            bool isAdmin = userInfo?.RoleId == (int)RolesEnum.Admin;
+
+            if (!isAdmin && userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                int? myScanId = ResolveUserScanId(userId);
+                var existing = _mangaChaptersService.GetMangaChapters(chapterId, null)?.Items?.FirstOrDefault();
+                if (existing != null && (!myScanId.HasValue || existing.ScanId != myScanId.Value))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        Status = 403,
+                        Error = true,
+                        ErrorDescription = "Solo puedes eliminar capítulos pertenecientes a tu propio Grupo Scan."
+                    });
+                }
+            }
+
             Response<MangaChapters> response = await _mangaChaptersService.DeleteMangaChapter(chapterId);
             return ResponseHandler(response);
         }

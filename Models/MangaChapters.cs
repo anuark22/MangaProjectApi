@@ -14,6 +14,7 @@ namespace Models
         public int UploadedBy { get; set; }
         public DateTime UploadedAt { get; set; }
         public int ScanId { get; set; }
+        public string? ScanName { get; set; }
         public int ViewAmount { get; set; }
         public decimal Rating { get; set; }
         public bool ChapterStatus { get; set; }

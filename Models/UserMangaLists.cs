@@ -43,4 +43,23 @@ namespace Models
         public string ReadingStatus { get; set; } = string.Empty;
         public DateTime AddedAt { get; set; }
     }
+
+    public class UserReadChapterDTO
+    {
+        public int ReadId { get; set; }
+        public int UserId { get; set; }
+        public int MangaId { get; set; }
+        public int ChapterId { get; set; }
+        public DateTime ReadAt { get; set; }
+        public bool Marked { get; set; }
+    }
+
+    public class UserMangaProgressDTO
+    {
+        public int MangaId { get; set; }
+        public string ReadingStatus { get; set; } = string.Empty;
+        public int TotalChapters { get; set; }
+        public int ReadChaptersCount { get; set; }
+        public int? LastReadChapterNumber { get; set; }
+    }
 }

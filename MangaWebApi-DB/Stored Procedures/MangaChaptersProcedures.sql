@@ -1,4 +1,9 @@
-﻿CREATE PROCEDURE [dbo].[MangaChaptersProcedures]
+﻿SET QUOTED_IDENTIFIER ON;
+GO
+SET ANSI_NULLS ON;
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[MangaChaptersProcedures]
     @ChapterId INT = NULL,
     @ChapterNumber INT = NULL,
     @ChapterTitle VARCHAR(255) = NULL,
@@ -13,26 +18,28 @@ BEGIN
     SET NOCOUNT ON;
 
     -- =========================================================================
-    -- ACTION 1: SELECT (Buscar capítulos por Manga o ID)
+    -- ACTION 1: SELECT (Buscar capítulos por Manga o ID con nombre del Scan Group)
     -- =========================================================================
     IF @Action = 1
     BEGIN
         SELECT 
-            [ChapterId],
-            [ChapterNumber],
-            [ChapterTitle],
-            [MangaId],
-            [UploadedBy],
-            [UploadedAt],
-            [ScanId],
-            [ViewAmount],
-            [Rating],
-            [ChapterStatus]
-        FROM [dbo].[MangaChapters]
+            mc.[ChapterId],
+            mc.[ChapterNumber],
+            mc.[ChapterTitle],
+            mc.[MangaId],
+            mc.[UploadedBy],
+            mc.[UploadedAt],
+            mc.[ScanId],
+            ISNULL(sg.[ScanName], 'Scan Group') AS [ScanName],
+            mc.[ViewAmount],
+            mc.[Rating],
+            mc.[ChapterStatus]
+        FROM [dbo].[MangaChapters] mc
+        LEFT JOIN [dbo].[ScansGroups] sg ON mc.[ScanId] = sg.[ScanId]
         WHERE 
-            (@ChapterId IS NULL OR [ChapterId] = @ChapterId)
-            AND (@MangaId IS NULL OR [MangaId] = @MangaId)
-            AND (@ChapterNumber IS NULL OR [ChapterNumber] = @ChapterNumber)
+            (@ChapterId IS NULL OR mc.[ChapterId] = @ChapterId)
+            AND (@MangaId IS NULL OR mc.[MangaId] = @MangaId)
+            AND (@ChapterNumber IS NULL OR mc.[ChapterNumber] = @ChapterNumber)
     END
 
     -- =========================================================================
