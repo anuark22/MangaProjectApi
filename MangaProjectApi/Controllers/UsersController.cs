@@ -191,21 +191,14 @@ namespace MangaProjectApi.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDTO model)
+        public IActionResult UpdateProfile([FromBody] UpdateProfileDTO model)
         {
-            if (!ModelState.IsValid)
+            return StatusCode(StatusCodes.Status403Forbidden, new
             {
-                return BadRequest(ModelState);
-            }
-
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-            {
-                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
-            }
-
-            Response<Users> response = await _usersService.UpdateProfile(model, userId);
-            return ResponseHandler(response);
+                Status = 403,
+                Error = true,
+                ErrorDescription = "El nombre de usuario y el correo electrónico no pueden ser modificados."
+            });
         }
 
         [HttpPost]
