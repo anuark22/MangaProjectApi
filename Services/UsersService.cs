@@ -39,8 +39,9 @@ namespace Services
         public Response<UsersDTO> Login(Models.UsersDTO model, bool recaptchaCheck = true, double hours = 8)
         {
             Response<UsersDTO> response = new();
-            object param = new { model.Email };
-            var query = "SELECT * FROM Users WHERE Email = @Email";
+            string identifier = (model.Email ?? model.Username ?? string.Empty).Trim();
+            object param = new { Identifier = identifier };
+            var query = "SELECT * FROM Users WHERE Email = @Identifier OR Username = @Identifier";
             List<UsersDTO> u = _commonService.Query<UsersDTO>(query, param).ToList();
 
             if (u.Count == 0)
