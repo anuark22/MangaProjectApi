@@ -4,6 +4,7 @@ using Services.Interfaces;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -30,19 +31,60 @@ namespace MangaProjectApi.Hubs
     public class LiveChatHub : Hub
     {
         private readonly IAntiSpamService _antiSpamService;
+        private readonly ICommonService _commonService;
 
-        // Ring buffer en memoria de los últimos 60 mensajes globales
+        // Ring buffer en memoria de los últimos 60 mensajes globales (precargado desde SQL Server una sola vez)
         private static readonly ConcurrentQueue<ChatMessageDto> _recentMessages = new();
         private static readonly ConcurrentDictionary<string, string> _connectedClients = new();
+        private static readonly object _historyInitLock = new();
+        private static volatile bool _historyLoaded = false;
         private const int MaxHistoryCount = 60;
 
-        public LiveChatHub(IAntiSpamService antiSpamService)
+        public LiveChatHub(IAntiSpamService antiSpamService, ICommonService commonService)
         {
             _antiSpamService = antiSpamService;
+            _commonService = commonService;
+        }
+
+        private void EnsureHistoryLoaded()
+        {
+            if (_historyLoaded) return;
+
+            lock (_historyInitLock)
+            {
+                if (_historyLoaded) return;
+
+                try
+                {
+                    var persisted = _commonService.Query<ChatMessageDto>(
+                        "LiveChatMessagesProcedures",
+                        new { Action = 2, Top = MaxHistoryCount },
+                        CommandType.StoredProcedure
+                    ).ToList();
+
+                    foreach (var m in persisted)
+                    {
+                        _recentMessages.Enqueue(m);
+                    }
+                    while (_recentMessages.Count > MaxHistoryCount)
+                    {
+                        _recentMessages.TryDequeue(out _);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[LiveChatHub] Error loading persisted chat history: {ex.Message}");
+                }
+                finally
+                {
+                    _historyLoaded = true;
+                }
+            }
         }
 
         public override async Task OnConnectedAsync()
         {
+            EnsureHistoryLoaded();
             _connectedClients[Context.ConnectionId] = Context.User?.Identity?.Name ?? "Guest";
 
             // Enviar historial reciente y contador de usuarios en línea al cliente recién conectado
@@ -126,6 +168,7 @@ namespace MangaProjectApi.Hubs
                 CreatedAt = DateTime.UtcNow
             };
 
+            EnsureHistoryLoaded();
             _recentMessages.Enqueue(msg);
             while (_recentMessages.Count > MaxHistoryCount)
             {
@@ -133,6 +176,31 @@ namespace MangaProjectApi.Hubs
             }
 
             await Clients.All.SendAsync("ReceiveMessage", msg);
+
+            // Persistir en SQL Server sin bloquear la entrega en tiempo real
+            try
+            {
+                _commonService.Query<int>(
+                    "LiveChatMessagesProcedures",
+                    new
+                    {
+                        Action = 1,
+                        MessageId = msg.Id,
+                        UserId = msg.UserId,
+                        Username = msg.Username,
+                        Email = msg.Email,
+                        RoleId = msg.RoleId,
+                        Text = msg.Text,
+                        MediaUrl = msg.MediaUrl,
+                        CreatedAt = msg.CreatedAt
+                    },
+                    CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[LiveChatHub] Error persisting chat message: {ex.Message}");
+            }
         }
     }
 }
