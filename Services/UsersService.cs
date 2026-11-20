@@ -58,6 +58,15 @@ namespace Services
                 return response;
             }
 
+            if (user.HasLocalPassword == false)
+            {
+                string providerLabel = string.Equals(user.AuthProvider, "GOOGLE", StringComparison.OrdinalIgnoreCase)
+                    ? "Google (Gmail)"
+                    : (user.AuthProvider ?? "un proveedor externo");
+                response.ParseExecution(403, $"Esta cuenta fue creada con {providerLabel} y aún no tiene contraseña local. Inicia sesión con Google o crea una contraseña desde tu Perfil (Seguridad).");
+                return response;
+            }
+
             if (!BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
             {
                 response.ParseExecution(403, "Wrong Password");
@@ -174,7 +183,9 @@ namespace Services
                         Username = candidateUsername,
                         Email = email.Trim(),
                         Password = randomPassHash,
-                        AceptTerms = true
+                        AceptTerms = true,
+                        AuthProvider = "GOOGLE",
+                        HasLocalPassword = false
                     },
                     CommandType.StoredProcedure
                 );
@@ -313,6 +324,8 @@ namespace Services
                 RoleId = user.RoleId ?? 1,
                 RoleName = user.RoleName ?? "CLIENTE",
                 AvatarUrl = user.AvatarUrl,
+                AuthProvider = user.AuthProvider ?? "LOCAL",
+                HasLocalPassword = user.HasLocalPassword ?? true,
                 CreatedAt = user.CreatedAt ?? DateTime.UtcNow,
                 UpdatedAt = user.UpdatedAt
             };
@@ -363,11 +376,14 @@ namespace Services
                 return response;
             }
 
-            // 2. Verificar que la contraseña actual sea correcta
-            if (!BCrypt.Net.BCrypt.Verify(model.CurrentPassword, user.Password))
+            // 2. Verificar contraseña actual solo si la cuenta ya posee contraseña local
+            if (user.HasLocalPassword != false)
             {
-                response.ParseExecution(400, "La contraseña actual es incorrecta");
-                return response;
+                if (string.IsNullOrEmpty(model.CurrentPassword) || !BCrypt.Net.BCrypt.Verify(model.CurrentPassword, user.Password))
+                {
+                    response.ParseExecution(400, "La contraseña actual es incorrecta");
+                    return response;
+                }
             }
 
             // 3. Hashear y guardar la nueva contraseña

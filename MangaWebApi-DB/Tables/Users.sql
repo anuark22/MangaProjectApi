@@ -14,5 +14,7 @@ CREATE TABLE [dbo].[Users]
     [IsBlocked] BIT NOT NULL DEFAULT 0, 
     [ScanId] INT NULL, 
     [AvatarUrl] VARCHAR(500) NULL,
+    [AuthProvider] VARCHAR(30) NOT NULL DEFAULT 'LOCAL',
+    [HasLocalPassword] BIT NOT NULL DEFAULT 1,
     CONSTRAINT [FK_Users_Roles] FOREIGN KEY ([RoleId]) REFERENCES [Roles]([RoleId])
 )

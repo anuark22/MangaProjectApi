@@ -19,6 +19,8 @@ namespace Models
         public int? IsBlocked { get; set; }
         public int? ScanId { get; set; }
         public string? AvatarUrl { get; set; }
+        public string? AuthProvider { get; set; }
+        public bool? HasLocalPassword { get; set; }
         public string? Token { get; set; }
         public string? RoleName { get; set; } = string.Empty;
         public int? IsOwnerRole { get; set; }
@@ -37,6 +39,8 @@ namespace Models
         public string? Token { get; set; }
         public int? IsBlocked { get; set; }
         public string? AvatarUrl { get; set; }
+        public string? AuthProvider { get; set; }
+        public bool? HasLocalPassword { get; set; }
         public string? Honeypot { get; set; }
         public string? RecaptchaToken { get; set; }
     }
@@ -49,6 +53,8 @@ namespace Models
         public int RoleId { get; set; }
         public string RoleName { get; set; } = string.Empty;
         public string? AvatarUrl { get; set; }
+        public string AuthProvider { get; set; } = "LOCAL";
+        public bool HasLocalPassword { get; set; } = true;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
@@ -66,8 +72,7 @@ namespace Models
 
     public class ChangePasswordDTO
     {
-        [Required(ErrorMessage = "La contraseña actual es requerida")]
-        public string CurrentPassword { get; set; } = string.Empty;
+        public string? CurrentPassword { get; set; }
 
         [Required(ErrorMessage = "La nueva contraseña es requerida")]
         [MinLength(6, ErrorMessage = "La nueva contraseña debe tener al menos 6 caracteres")]

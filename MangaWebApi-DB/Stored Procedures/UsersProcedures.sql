@@ -13,6 +13,8 @@ CREATE PROCEDURE [dbo].[UsersProcedures]
 	@IsBlocked BIT = NULL,
 	@ScanId INT = NULL,
 	@AvatarUrl VARCHAR(500) = NULL,
+	@AuthProvider VARCHAR(30) = NULL,
+	@HasLocalPassword BIT = NULL,
 	@Action INT
 AS
 BEGIN
@@ -39,7 +41,9 @@ BEGIN
 			u.[AceptTerms],
 			u.[IsBlocked],
 			u.[ScanId],
-			u.[AvatarUrl]
+			u.[AvatarUrl],
+			u.[AuthProvider],
+			u.[HasLocalPassword]
 		FROM [dbo].[Users] u 
 		LEFT JOIN [dbo].[Roles] r ON r.[RoleId] = u.[RoleId]
 		WHERE 
@@ -75,7 +79,9 @@ BEGIN
 				[Status],
 				[CreatedAt],
 				[AceptTerms],
-				[IsBlocked]
+				[IsBlocked],
+				[AuthProvider],
+				[HasLocalPassword]
 			)
 			VALUES 
 			(
@@ -86,7 +92,9 @@ BEGIN
 				1,
 				CURRENT_TIMESTAMP,
 				ISNULL(@AceptTerms, 1),
-				0
+				0,
+				ISNULL(@AuthProvider, 'LOCAL'),
+				ISNULL(@HasLocalPassword, 1)
 			);
 
 			SELECT 200 AS [Status], SCOPE_IDENTITY() AS [NewUserId];
@@ -165,6 +173,7 @@ BEGIN
 			UPDATE [dbo].[Users]
 			SET 
 				[Password] = @Password,
+				[HasLocalPassword] = 1,
 				[RecoveryToken] = NULL,
 				[RecoveryTokenExpiration] = NULL,
 				[UpdatedAt] = CURRENT_TIMESTAMP
@@ -192,6 +201,7 @@ BEGIN
 			UPDATE [dbo].[Users]
 			SET 
 				[Password] = @Password,
+				[HasLocalPassword] = 1,
 				[UpdatedAt] = CURRENT_TIMESTAMP
 			WHERE [UserId] = @UserId;
 
