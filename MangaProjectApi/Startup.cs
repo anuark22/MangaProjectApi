@@ -51,6 +51,7 @@ namespace MangaProjectApi
             services.AddScoped<IChapterReportsService, ChapterReportsService>();
             services.AddScoped<IChapterCommentsService, ChapterCommentsService>();
             services.AddScoped<IImageStorageService, ImageStorageService>();
+            services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddSingleton<IAntiSpamService, AntiSpamService>();
             services.AddSignalR();
             // 

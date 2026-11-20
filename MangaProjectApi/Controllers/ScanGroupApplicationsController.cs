@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MangaProjectApi.CustomMiddleware;
 using Models;
 using Services.Interfaces;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -13,10 +14,12 @@ namespace MangaProjectApi.Controllers
     public class ScanGroupApplicationsController : HandlerController
     {
         private readonly IScanGroupApplicationsService _service;
+        private readonly IAuditLogService _auditLogService;
 
-        public ScanGroupApplicationsController(IScanGroupApplicationsService service)
+        public ScanGroupApplicationsController(IScanGroupApplicationsService service, IAuditLogService auditLogService)
         {
             _service = service;
+            _auditLogService = auditLogService;
         }
 
         /// <summary>
@@ -37,6 +40,11 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<ScanGroupApplication> response = await _service.Apply(model, userId);
+            if (!response.Error && response.Status == 200)
+            {
+                var created = response.Items?.FirstOrDefault();
+                _auditLogService.Log(HttpContext, "CREATE", "ScanApplication", created?.ApplicationId, model.ScanName, "Usuario envió solicitud para crear Grupo Scan");
+            }
             return ResponseHandler(response);
         }
 
@@ -83,6 +91,11 @@ namespace MangaProjectApi.Controllers
             int adminUserId = userIdClaim != null && int.TryParse(userIdClaim.Value, out int id) ? id : 0;
 
             Response<DBClass> response = await _service.ReviewApplication(model, adminUserId);
+            if (!response.Error && response.Status == 200)
+            {
+                string auditAction = model.IsApproved ? "APPROVE" : "REJECT";
+                _auditLogService.Log(HttpContext, auditAction, "ScanApplication", model.ApplicationId, $"Solicitud #{model.ApplicationId}", model.AdminNotes ?? (model.IsApproved ? "Solicitud aprobada" : "Solicitud rechazada"));
+            }
             return ResponseHandler(response);
         }
     }

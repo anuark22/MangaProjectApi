@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MangaProjectApi.CustomMiddleware;
 using Models;
 using Services.Interfaces;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -13,10 +14,12 @@ namespace MangaProjectApi.Controllers
     public class NoticesController : HandlerController
     {
         private readonly INoticesService _noticesService;
+        private readonly IAuditLogService _auditLogService;
 
-        public NoticesController(INoticesService noticesService)
+        public NoticesController(INoticesService noticesService, IAuditLogService auditLogService)
         {
             _noticesService = noticesService;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet]
@@ -44,6 +47,11 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<Notices> response = await _noticesService.CreateNotice(model, userId);
+            if (!response.Error && response.Status == 200)
+            {
+                var created = response.Items?.FirstOrDefault();
+                _auditLogService.Log(HttpContext, "CREATE", "Notice", created?.NoticeId, model.Title, $"Categoría: {model.Category}");
+            }
             return ResponseHandler(response);
         }
 
@@ -57,6 +65,10 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<Notices> response = await _noticesService.UpdateNotice(model);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "UPDATE", "Notice", model.NoticeId, model.Title, "Noticia actualizada");
+            }
             return ResponseHandler(response);
         }
 
@@ -65,6 +77,10 @@ namespace MangaProjectApi.Controllers
         public async Task<IActionResult> ToggleActive(int noticeId)
         {
             Response<Notices> response = await _noticesService.ToggleNoticeActive(noticeId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "UPDATE", "Notice", noticeId, $"Noticia #{noticeId}", "Estado activo/inactivo alternado");
+            }
             return ResponseHandler(response);
         }
 
@@ -73,6 +89,10 @@ namespace MangaProjectApi.Controllers
         public async Task<IActionResult> ToggleFeatured(int noticeId)
         {
             Response<Notices> response = await _noticesService.ToggleNoticeFeatured(noticeId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "UPDATE", "Notice", noticeId, $"Noticia #{noticeId}", "Estado destacado alternado");
+            }
             return ResponseHandler(response);
         }
 
@@ -81,6 +101,10 @@ namespace MangaProjectApi.Controllers
         public async Task<IActionResult> DeleteNotice(int noticeId)
         {
             Response<Notices> response = await _noticesService.DeleteNotice(noticeId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "DELETE", "Notice", noticeId, $"Noticia #{noticeId}", "Noticia eliminada");
+            }
             return ResponseHandler(response);
         }
     }

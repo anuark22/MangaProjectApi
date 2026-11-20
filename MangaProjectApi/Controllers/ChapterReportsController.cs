@@ -14,11 +14,13 @@ namespace MangaProjectApi.Controllers
     {
         private readonly IChapterReportsService _service;
         private readonly IAntiSpamService _antiSpamService;
+        private readonly IAuditLogService _auditLogService;
 
-        public ChapterReportsController(IChapterReportsService service, IAntiSpamService antiSpamService)
+        public ChapterReportsController(IChapterReportsService service, IAntiSpamService antiSpamService, IAuditLogService auditLogService)
         {
             _service = service;
             _antiSpamService = antiSpamService;
+            _auditLogService = auditLogService;
         }
 
         /// <summary>
@@ -104,6 +106,7 @@ namespace MangaProjectApi.Controllers
             if (response.Status == 200 && !response.Error)
             {
                 _antiSpamService.RecordAction("chapter_report", userId.ToString());
+                _auditLogService.Log(HttpContext, "CREATE", "ChapterReport", model.ChapterId, $"Reporte Cap. #{model.ChapterId}", $"Motivo: {model.Reason}");
             }
 
             return ResponseHandler(response);
@@ -128,6 +131,10 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<ChapterReport> response = _service.ReviewReport(model, adminUserId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "RESOLVE", "ChapterReport", model.ReportId, $"Reporte #{model.ReportId}", $"Estado: {model.Status} | Acción: {model.ActionTaken} | Notas: {model.AdminNotes}");
+            }
             return ResponseHandler(response);
         }
     }

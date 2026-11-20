@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MangaProjectApi.CustomMiddleware;
 using Models;
 using Services.Interfaces;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,11 +15,13 @@ namespace MangaProjectApi.Controllers
     public class ScansGroupsController : HandlerController
     {
         private readonly IScansGroupsService _scansGroupsService;
+        private readonly IAuditLogService _auditLogService;
         private readonly IWebHostEnvironment _env;
 
-        public ScansGroupsController(IScansGroupsService scansGroupsService, IWebHostEnvironment env)
+        public ScansGroupsController(IScansGroupsService scansGroupsService, IAuditLogService auditLogService, IWebHostEnvironment env)
         {
             _scansGroupsService = scansGroupsService;
+            _auditLogService = auditLogService;
             _env = env;
         }
 
@@ -50,6 +53,11 @@ namespace MangaProjectApi.Controllers
 
             // Enviamos el modelo y el ID extraído al servicio
             Response<ScansGroups> response = await _scansGroupsService.CreateScanGroup(model, userId);
+            if (!response.Error && response.Status == 200)
+            {
+                var created = response.Items?.FirstOrDefault();
+                _auditLogService.Log(HttpContext, "CREATE", "ScanGroup", created?.ScanId, created?.ScanName ?? model.ScanName, "Nuevo Grupo Scan creado", created?.ScanId);
+            }
             return ResponseHandler(response);
         }
 
@@ -63,6 +71,10 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<ScansGroups> response = await _scansGroupsService.UpdateScanGroup(model);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "UPDATE", "ScanGroup", model.ScanId, model.ScanName, "Datos del Grupo Scan actualizados", model.ScanId);
+            }
             return ResponseHandler(response);
         }
 
@@ -70,7 +82,12 @@ namespace MangaProjectApi.Controllers
         [AdminOnly]
         public async Task<IActionResult> DeleteScanGroup(int scanId)
         {
+            var existing = _scansGroupsService.GetScansGroups(scanId, null)?.Items?.FirstOrDefault();
             Response<ScansGroups> response = await _scansGroupsService.DeleteScanGroup(scanId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "DELETE", "ScanGroup", scanId, existing?.ScanName ?? $"Scan #{scanId}", "Grupo Scan eliminado", scanId);
+            }
             return ResponseHandler(response);
         }
     }

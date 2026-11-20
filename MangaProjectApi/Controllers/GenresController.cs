@@ -2,6 +2,7 @@
 using Models;
 using Services.Interfaces;
 using MangaProjectApi.CustomMiddleware;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MangaProjectApi.Controllers
@@ -12,11 +13,13 @@ namespace MangaProjectApi.Controllers
     public class GenresController : HandlerController
     {
         private readonly IGenresService _genresService;
+        private readonly IAuditLogService _auditLogService;
         private readonly IWebHostEnvironment _env;
 
-        public GenresController(IGenresService genresService, IWebHostEnvironment env)
+        public GenresController(IGenresService genresService, IAuditLogService auditLogService, IWebHostEnvironment env)
         {
             _genresService = genresService;
+            _auditLogService = auditLogService;
             _env = env;
         }
 
@@ -45,6 +48,11 @@ namespace MangaProjectApi.Controllers
 
             // El servicio se encarga de todo el trabajo sucio
             Response<Genres> response = await _genresService.CreateGenre(model);
+            if (!response.Error && response.Status == 200)
+            {
+                var created = response.Items?.FirstOrDefault();
+                _auditLogService.Log(HttpContext, "CREATE", "Genre", created?.GenreId, created?.GenreName ?? model.GenreName, "Nuevo género creado");
+            }
             return ResponseHandler(response);
         }
 
@@ -62,6 +70,10 @@ namespace MangaProjectApi.Controllers
 
             // Delegamos toda la lógica al servicio
             Response<Genres> response = await _genresService.UpdateGenre(model);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "UPDATE", "Genre", model.GenreId, model.GenreName, "Género actualizado");
+            }
             return ResponseHandler(response);
         }
 
@@ -72,7 +84,12 @@ namespace MangaProjectApi.Controllers
         [AdminOnly] // Opcional: Quítalo si cualquier usuario autenticado puede borrar
         public async Task<IActionResult> DeleteGenre(int genreId)
         {
+            var existing = _genresService.GetGenres(genreId, null)?.Items?.FirstOrDefault();
             Response<Genres> response = await _genresService.DeleteGenre(genreId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(HttpContext, "DELETE", "Genre", genreId, existing?.GenreName ?? $"Genre #{genreId}", "Género eliminado");
+            }
             return ResponseHandler(response);
         }
     }

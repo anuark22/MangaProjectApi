@@ -18,12 +18,18 @@ namespace MangaProjectApi.Controllers
     {
         private readonly IMangaChaptersService _mangaChaptersService;
         private readonly ICommonService _commonService;
+        private readonly IAuditLogService _auditLogService;
         private readonly IWebHostEnvironment _env;
 
-        public MangaChaptersController(IMangaChaptersService mangaChaptersService, ICommonService commonService, IWebHostEnvironment env)
+        public MangaChaptersController(
+            IMangaChaptersService mangaChaptersService,
+            ICommonService commonService,
+            IAuditLogService auditLogService,
+            IWebHostEnvironment env)
         {
             _mangaChaptersService = mangaChaptersService;
             _commonService = commonService;
+            _auditLogService = auditLogService;
             _env = env;
         }
 
@@ -99,6 +105,18 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<MangaChapters> response = await _mangaChaptersService.CreateMangaChapter(model, userId);
+            if (!response.Error && response.Status == 200)
+            {
+                var created = response.Items?.FirstOrDefault();
+                _auditLogService.Log(
+                    HttpContext,
+                    "CREATE",
+                    "Chapter",
+                    created?.ChapterId,
+                    $"Cap. {model.ChapterNumber} - {model.ChapterTitle}",
+                    $"MangaId: {model.MangaId}, Páginas: {model.Files?.Count ?? 0}",
+                    model.ScanId);
+            }
             return ResponseHandler(response);
         }
 
@@ -115,10 +133,10 @@ namespace MangaProjectApi.Controllers
             var userInfo = HttpContext.Items["Client"] as UsersDTO;
             bool isAdmin = userInfo?.RoleId == (int)RolesEnum.Admin;
 
+            var existing = _mangaChaptersService.GetMangaChapters(model.ChapterId, null)?.Items?.FirstOrDefault();
             if (!isAdmin && userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
             {
                 int? myScanId = ResolveUserScanId(userId);
-                var existing = _mangaChaptersService.GetMangaChapters(model.ChapterId, null)?.Items?.FirstOrDefault();
                 if (existing != null && (!myScanId.HasValue || existing.ScanId != myScanId.Value))
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new
@@ -131,6 +149,17 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<MangaChapters> response = await _mangaChaptersService.UpdateMangaChapter(model);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(
+                    HttpContext,
+                    "UPDATE",
+                    "Chapter",
+                    model.ChapterId,
+                    $"Cap. {model.ChapterNumber ?? existing?.ChapterNumber} - {model.ChapterTitle ?? existing?.ChapterTitle}",
+                    $"MangaId: {existing?.MangaId}",
+                    existing?.ScanId);
+            }
             return ResponseHandler(response);
         }
 
@@ -142,10 +171,10 @@ namespace MangaProjectApi.Controllers
             var userInfo = HttpContext.Items["Client"] as UsersDTO;
             bool isAdmin = userInfo?.RoleId == (int)RolesEnum.Admin;
 
+            var existing = _mangaChaptersService.GetMangaChapters(chapterId, null)?.Items?.FirstOrDefault();
             if (!isAdmin && userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
             {
                 int? myScanId = ResolveUserScanId(userId);
-                var existing = _mangaChaptersService.GetMangaChapters(chapterId, null)?.Items?.FirstOrDefault();
                 if (existing != null && (!myScanId.HasValue || existing.ScanId != myScanId.Value))
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new
@@ -158,6 +187,17 @@ namespace MangaProjectApi.Controllers
             }
 
             Response<MangaChapters> response = await _mangaChaptersService.DeleteMangaChapter(chapterId);
+            if (!response.Error && response.Status == 200)
+            {
+                _auditLogService.Log(
+                    HttpContext,
+                    "DELETE",
+                    "Chapter",
+                    chapterId,
+                    existing != null ? $"Cap. {existing.ChapterNumber} - {existing.ChapterTitle}" : $"Capítulo #{chapterId}",
+                    $"MangaId: {existing?.MangaId}",
+                    existing?.ScanId);
+            }
             return ResponseHandler(response);
         }
     }
