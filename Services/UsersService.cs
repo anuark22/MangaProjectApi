@@ -3,7 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Services.Interfaces;
 using Models;
@@ -63,6 +66,147 @@ namespace Services
             });
 
             response.Items = u;
+            response.ParseResponse();
+            return response;
+        }
+
+        public async Task<Response<UsersDTO>> GoogleAuthAsync(string idToken)
+        {
+            Response<UsersDTO> response = new();
+            if (string.IsNullOrWhiteSpace(idToken))
+            {
+                response.ParseExecution(400, "Token de Google inválido.");
+                return response;
+            }
+
+            string? email = null;
+            string? displayName = null;
+            string? aud = null;
+            string? emailVerified = null;
+            string? iss = null;
+
+            try
+            {
+                using var http = new HttpClient();
+                var res = await http.GetAsync($"https://oauth2.googleapis.com/tokeninfo?id_token={Uri.EscapeDataString(idToken)}");
+                if (!res.IsSuccessStatusCode)
+                {
+                    response.ParseExecution(401, "El token de Google no es válido o ha expirado.");
+                    return response;
+                }
+
+                string json = await res.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                email = root.TryGetProperty("email", out var pEmail) ? pEmail.GetString() : null;
+                displayName = root.TryGetProperty("name", out var pName) ? pName.GetString() : null;
+                aud = root.TryGetProperty("aud", out var pAud) ? pAud.GetString() : null;
+                emailVerified = root.TryGetProperty("email_verified", out var pVer) ? pVer.ToString() : null;
+                iss = root.TryGetProperty("iss", out var pIss) ? pIss.GetString() : null;
+            }
+            catch (Exception ex)
+            {
+                response.ParseExecution(500, $"Error validando cuenta con Google: {ex.Message}");
+                return response;
+            }
+
+            string? configuredClientId = _config["GoogleAuth:ClientId"];
+            if (!string.IsNullOrWhiteSpace(configuredClientId) && !string.Equals(aud, configuredClientId.Trim(), StringComparison.Ordinal))
+            {
+                response.ParseExecution(403, "El Client ID del token de Google no coincide con la aplicación.");
+                return response;
+            }
+
+            if (!string.IsNullOrWhiteSpace(iss) && iss != "https://accounts.google.com" && iss != "accounts.google.com")
+            {
+                response.ParseExecution(403, "Emisor del token de Google no autorizado.");
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(email) || !string.Equals(emailVerified, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                response.ParseExecution(403, "Tu cuenta de Gmail debe tener el correo verificado.");
+                return response;
+            }
+
+            // Buscar si el usuario ya existe por Email
+            List<UsersDTO> existing = _commonService.Query<UsersDTO>(
+                "SELECT * FROM Users WHERE Email = @Email",
+                new { Email = email.Trim() }
+            ).ToList();
+
+            if (existing.Count == 0)
+            {
+                // Generar Username único a partir del nombre de Google o prefijo del email
+                string rawBase = !string.IsNullOrWhiteSpace(displayName)
+                    ? displayName
+                    : email.Split('@')[0];
+                string sanitized = Regex.Replace(rawBase, @"[^a-zA-Z0-9_]", "");
+                if (sanitized.Length < 3) sanitized = "reader_" + sanitized;
+                if (sanitized.Length > 20) sanitized = sanitized.Substring(0, 20);
+
+                string candidateUsername = sanitized;
+                int attempts = 0;
+                while (attempts < 5)
+                {
+                    var dup = _commonService.Query<int>(
+                        "SELECT COUNT(1) FROM Users WHERE Username = @Username",
+                        new { Username = candidateUsername }
+                    ).FirstOrDefault();
+
+                    if (dup == 0) break;
+                    attempts++;
+                    candidateUsername = $"{sanitized}_{RandomNumberGenerator.GetInt32(1000, 9999)}";
+                }
+
+                string randomPassHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N") + "G!");
+                var dbRes = await _commonService.QueryAsync<DBClass>(
+                    "UsersProcedures",
+                    new
+                    {
+                        Action = 2,
+                        Username = candidateUsername,
+                        Email = email.Trim(),
+                        Password = randomPassHash,
+                        AceptTerms = true
+                    },
+                    CommandType.StoredProcedure
+                );
+
+                var first = dbRes.FirstOrDefault();
+                if (first == null || first.Status != 200)
+                {
+                    response.ParseExecution(first?.Status ?? 500, first?.ErrorDescription ?? "No se pudo registrar la cuenta de Google.");
+                    return response;
+                }
+
+                existing = _commonService.Query<UsersDTO>(
+                    "SELECT * FROM Users WHERE Email = @Email",
+                    new { Email = email.Trim() }
+                ).ToList();
+            }
+
+            if (existing.Count == 0)
+            {
+                response.ParseExecution(500, "No se pudo recuperar el usuario tras autenticar con Google.");
+                return response;
+            }
+
+            UsersDTO user = existing.First();
+            if (user.IsBlocked == 1)
+            {
+                response.ParseExecution(403, "User Banned");
+                return response;
+            }
+
+            existing.ForEach(us =>
+            {
+                us.Token = _jwtService.Generate(us);
+                us.Password = null;
+            });
+
+            response.Items = existing;
             response.ParseResponse();
             return response;
         }

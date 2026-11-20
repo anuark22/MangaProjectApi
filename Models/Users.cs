@@ -155,4 +155,12 @@ namespace Models
         public int RoleId { get; set; }
         public int UserId { get; set; }
     }
+
+    public class GoogleAuthDTO
+    {
+        [Required(ErrorMessage = "El token de Google es obligatorio")]
+        public string IdToken { get; set; } = string.Empty;
+
+        public string? Honeypot { get; set; }
+    }
 }

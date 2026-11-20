@@ -144,6 +144,39 @@ namespace MangaProjectApi.Controllers
             return ResponseHandler(users);
         }
 
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthDTO model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (_antiSpamService.IsHoneypotTriggered(model.Honeypot))
+            {
+                return BadRequest(new { Status = 400, Error = true, ErrorDescription = "Solicitud rechazada." });
+            }
+
+            string clientIp = GetClientIpAddress();
+            var (isRateLimited, secondsRemaining) = _antiSpamService.CheckActionCooldown("google_auth", clientIp, 3);
+            if (isRateLimited)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    Status = 429,
+                    Error = true,
+                    SecondsRemaining = secondsRemaining,
+                    ErrorDescription = $"Por favor espera {secondsRemaining} segundos antes de reintentar."
+                });
+            }
+
+            _antiSpamService.RecordAction("google_auth", clientIp);
+
+            Response<UsersDTO> response = await _usersService.GoogleAuthAsync(model.IdToken);
+            return ResponseHandler(response);
+        }
+
         [HttpGet]
         public IActionResult GetMyProfile()
         {
