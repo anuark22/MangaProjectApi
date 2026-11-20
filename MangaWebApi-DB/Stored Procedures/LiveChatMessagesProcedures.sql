@@ -1,9 +1,4 @@
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE OR ALTER PROCEDURE [dbo].[LiveChatMessagesProcedures]
+CREATE PROCEDURE [dbo].[LiveChatMessagesProcedures]
     @Action INT,
     @MessageId NVARCHAR(32) = NULL,
     @UserId INT = NULL,

@@ -1,9 +1,4 @@
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE OR ALTER PROCEDURE [dbo].[AuditLogsProcedures]
+CREATE PROCEDURE [dbo].[AuditLogsProcedures]
     @Action INT,
     @UserId INT = NULL,
     @Username NVARCHAR(150) = NULL,

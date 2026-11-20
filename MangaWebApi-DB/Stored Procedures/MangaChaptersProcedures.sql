@@ -1,9 +1,4 @@
-﻿SET QUOTED_IDENTIFIER ON;
-GO
-SET ANSI_NULLS ON;
-GO
-
-CREATE OR ALTER PROCEDURE [dbo].[MangaChaptersProcedures]
+﻿CREATE PROCEDURE [dbo].[MangaChaptersProcedures]
     @ChapterId INT = NULL,
     @ChapterNumber INT = NULL,
     @ChapterTitle VARCHAR(255) = NULL,
