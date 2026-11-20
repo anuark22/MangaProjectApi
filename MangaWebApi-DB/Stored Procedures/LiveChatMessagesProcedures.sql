@@ -50,21 +50,24 @@ BEGIN
             [Username],
             [Email],
             [RoleId],
+            [AvatarUrl],
             [Text],
             [MediaUrl],
             [CreatedAt]
         FROM (
             SELECT TOP (ISNULL(@Top, 60))
-                [MessageId] AS [Id],
-                [UserId],
-                [Username],
-                [Email],
-                [RoleId],
-                [Text],
-                [MediaUrl],
-                [CreatedAt]
-            FROM [dbo].[LiveChatMessages]
-            ORDER BY [CreatedAt] DESC
+                l.[MessageId] AS [Id],
+                l.[UserId],
+                l.[Username],
+                l.[Email],
+                l.[RoleId],
+                u.[AvatarUrl],
+                l.[Text],
+                l.[MediaUrl],
+                l.[CreatedAt]
+            FROM [dbo].[LiveChatMessages] l
+            LEFT JOIN [dbo].[Users] u ON u.[UserId] = l.[UserId]
+            ORDER BY l.[CreatedAt] DESC
         ) recent
         ORDER BY [CreatedAt] ASC;
         RETURN;

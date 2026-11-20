@@ -18,6 +18,7 @@ namespace MangaProjectApi.Hubs
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public int RoleId { get; set; }
+        public string? AvatarUrl { get; set; }
         public string Text { get; set; } = string.Empty;
         public string? MediaUrl { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -156,6 +157,17 @@ namespace MangaProjectApi.Hubs
 
             int.TryParse(Context.User?.FindFirst("role")?.Value ?? Context.User?.FindFirst(ClaimTypes.Role)?.Value, out int roleId);
 
+            string? avatarUrl = null;
+            try
+            {
+                avatarUrl = _commonService.Query<string?>(
+                    "SELECT TOP 1 [AvatarUrl] FROM [dbo].[Users] WHERE [UserId] = @UserId",
+                    new { UserId = userId },
+                    CommandType.Text
+                ).FirstOrDefault();
+            }
+            catch { }
+
             var msg = new ChatMessageDto
             {
                 Id = Guid.NewGuid().ToString("N"),
@@ -163,12 +175,20 @@ namespace MangaProjectApi.Hubs
                 Username = username,
                 Email = email,
                 RoleId = roleId,
+                AvatarUrl = avatarUrl,
                 Text = cleanText,
                 MediaUrl = cleanMedia,
                 CreatedAt = DateTime.UtcNow
             };
 
             EnsureHistoryLoaded();
+            if (!string.IsNullOrEmpty(avatarUrl))
+            {
+                foreach (var old in _recentMessages)
+                {
+                    if (old.UserId == userId) old.AvatarUrl = avatarUrl;
+                }
+            }
             _recentMessages.Enqueue(msg);
             while (_recentMessages.Count > MaxHistoryCount)
             {
