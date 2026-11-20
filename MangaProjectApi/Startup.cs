@@ -49,8 +49,10 @@ namespace MangaProjectApi
             services.AddScoped<IRolesService, RolesService>();
             services.AddScoped<IScanGroupApplicationsService, ScanGroupApplicationsService>();
             services.AddScoped<IChapterReportsService, ChapterReportsService>();
+            services.AddScoped<IChapterCommentsService, ChapterCommentsService>();
             services.AddScoped<IImageStorageService, ImageStorageService>();
             services.AddSingleton<IAntiSpamService, AntiSpamService>();
+            services.AddSignalR();
             // 
             services.AddSwaggerGen(c =>
             {
@@ -102,6 +104,20 @@ namespace MangaProjectApi
                     ValidIssuer = _config["Jwt:Issuer"].Trim(), // ← Usar Trim()
                     ValidAudience = _config["Jwt:Audience"].Trim(),
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]))
+                };
+                // Permitir lectura de token JWT vía QueryString para WebSockets de SignalR (/hubs/chat)
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    }
                 };
             });
 
@@ -162,6 +178,7 @@ namespace MangaProjectApi
             {
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
+                endpoints.MapHub<MangaProjectApi.Hubs.LiveChatHub>("/hubs/chat");
             });
         }
     }
