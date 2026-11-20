@@ -202,6 +202,19 @@ namespace MangaProjectApi.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserId");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { Status = 401, ErrorDescription = "Token inválido o usuario no identificado." });
+            }
+
+            Response<Users> response = await _usersService.UploadAvatarAsync(file, userId);
+            return ResponseHandler(response);
+        }
+
+        [HttpPost]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO model)
         {
             if (!ModelState.IsValid)

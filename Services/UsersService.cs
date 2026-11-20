@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -19,17 +20,20 @@ namespace Services
         private readonly IConfiguration _config;
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
+        private readonly IImageStorageService _imageStorageService;
 
         public UsersService(
             ICommonService commonService, 
             IJwtService jwtService, 
             IConfiguration config,
-            IEmailService emailService)
+            IEmailService emailService,
+            IImageStorageService imageStorageService)
         {
             _commonService = commonService;
             _jwtService = jwtService;
             _config = config;
             _emailService = emailService;
+            _imageStorageService = imageStorageService;
         }
 
         public Response<UsersDTO> Login(Models.UsersDTO model, bool recaptchaCheck = true, double hours = 8)
@@ -230,6 +234,46 @@ namespace Services
             return response;
         }
 
+        public async Task<Response<Users>> UploadAvatarAsync(IFormFile file, int userId)
+        {
+            Response<Users> response = new();
+            if (file == null || file.Length == 0)
+            {
+                response.ParseExecution(400, "Debes seleccionar una imagen válida.");
+                return response;
+            }
+
+            if (file.Length > 5 * 1024 * 1024)
+            {
+                response.ParseExecution(400, "La imagen no puede superar los 5 MB.");
+                return response;
+            }
+
+            string fileName = await _imageStorageService.SaveImageAsWebpAsync(file, "Avatars", 85);
+            string baseUrl = (_config["DomainSettings:ImageUrl"] ?? "https://localhost:44311/Files/").TrimEnd('/') + "/";
+            string avatarUrl = $"{baseUrl}Avatars/{fileName}";
+
+            var dbRes = await _commonService.QueryAsync<DBClass>(
+                "UsersProcedures",
+                new { Action = 8, UserId = userId, AvatarUrl = avatarUrl },
+                CommandType.StoredProcedure
+            );
+
+            var first = dbRes.FirstOrDefault();
+            if (first != null && first.Status != 200)
+            {
+                response.ParseExecution(first.Status, first.ErrorDescription);
+                return response;
+            }
+
+            response.Items = new List<Users>
+            {
+                new Users { UserId = userId, AvatarUrl = avatarUrl }
+            };
+            response.ParseExecution(200, "Foto de perfil actualizada con éxito.");
+            return response;
+        }
+
         public Response<Users> GetUsers(int? userId)
         {
             Response<Users> response = new();
@@ -267,6 +311,7 @@ namespace Services
                 Email = user.Email,
                 RoleId = user.RoleId ?? 1,
                 RoleName = user.RoleName ?? "CLIENTE",
+                AvatarUrl = user.AvatarUrl,
                 CreatedAt = user.CreatedAt ?? DateTime.UtcNow,
                 UpdatedAt = user.UpdatedAt
             };

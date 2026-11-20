@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Models;
 using System.Threading.Tasks;
 
@@ -11,6 +12,7 @@ namespace Services.Interfaces
         Task<Response<UsersDTO>> GoogleAuthAsync(string idToken);
         Response<UserProfileDTO> GetUserProfile(int userId);
         Task<Response<Users>> UpdateProfile(UpdateProfileDTO model, int userId);
+        Task<Response<Users>> UploadAvatarAsync(IFormFile file, int userId);
         Task<Response<Users>> ChangePassword(ChangePasswordDTO model, int userId);
         Task<Response<Users>> ForgotPassword(ForgotPasswordRequestDTO model);
         Response<Users> ValidateRecoveryToken(ValidateTokenDTO model);

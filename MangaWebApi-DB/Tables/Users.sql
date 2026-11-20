@@ -13,5 +13,6 @@ CREATE TABLE [dbo].[Users]
     [AceptTerms] BIT NOT NULL, 
     [IsBlocked] BIT NOT NULL DEFAULT 0, 
     [ScanId] INT NULL, 
+    [AvatarUrl] VARCHAR(500) NULL,
     CONSTRAINT [FK_Users_Roles] FOREIGN KEY ([RoleId]) REFERENCES [Roles]([RoleId])
 )

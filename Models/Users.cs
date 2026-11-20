@@ -18,6 +18,7 @@ namespace Models
         public bool? AceptTerms { get; set; }
         public int? IsBlocked { get; set; }
         public int? ScanId { get; set; }
+        public string? AvatarUrl { get; set; }
         public string? Token { get; set; }
         public string? RoleName { get; set; } = string.Empty;
         public int? IsOwnerRole { get; set; }
@@ -35,6 +36,7 @@ namespace Models
         public int? RoleId { get; set; }
         public string? Token { get; set; }
         public int? IsBlocked { get; set; }
+        public string? AvatarUrl { get; set; }
         public string? Honeypot { get; set; }
         public string? RecaptchaToken { get; set; }
     }
@@ -46,6 +48,7 @@ namespace Models
         public string Email { get; set; } = string.Empty;
         public int RoleId { get; set; }
         public string RoleName { get; set; } = string.Empty;
+        public string? AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

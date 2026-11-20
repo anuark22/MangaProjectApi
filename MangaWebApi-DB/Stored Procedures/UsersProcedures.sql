@@ -12,6 +12,7 @@ CREATE PROCEDURE [dbo].[UsersProcedures]
 	@AceptTerms BIT = NULL,
 	@IsBlocked BIT = NULL,
 	@ScanId INT = NULL,
+	@AvatarUrl VARCHAR(500) = NULL,
 	@Action INT
 AS
 BEGIN
@@ -37,7 +38,8 @@ BEGIN
 			u.[RecoveryTokenExpiration],
 			u.[AceptTerms],
 			u.[IsBlocked],
-			u.[ScanId]
+			u.[ScanId],
+			u.[AvatarUrl]
 		FROM [dbo].[Users] u 
 		LEFT JOIN [dbo].[Roles] r ON r.[RoleId] = u.[RoleId]
 		WHERE 
@@ -244,6 +246,25 @@ BEGIN
 		BEGIN CATCH
 			SELECT 500 AS [Status], ERROR_MESSAGE() AS [ErrorDescription];
 		END CATCH
+	END
+
+	-- =========================================================================
+	-- ACTION 8: UPDATE AVATAR (Actualizar foto de perfil)
+	-- =========================================================================
+	IF @Action = 8
+	BEGIN
+		IF NOT EXISTS (SELECT 1 FROM [dbo].[Users] WHERE [UserId] = @UserId)
+		BEGIN
+			SELECT 404 AS [Status], 'User not found' AS [ErrorDescription];
+			RETURN;
+		END
+
+		UPDATE [dbo].[Users]
+		SET [AvatarUrl] = @AvatarUrl,
+			[UpdatedAt] = CURRENT_TIMESTAMP
+		WHERE [UserId] = @UserId;
+
+		SELECT 200 AS [Status];
 	END
 
 END
