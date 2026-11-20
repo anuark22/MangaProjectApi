@@ -100,6 +100,17 @@ namespace MangaProjectApi.Controllers
         [AdminOnly]
         public async Task<IActionResult> DeleteManga(int mangaId)
         {
+            var userInfo = HttpContext.Items["Client"] as UsersDTO;
+            if (userInfo?.RoleId != (int)RolesEnum.Admin)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    Status = 403,
+                    Error = true,
+                    ErrorDescription = "Solo los administradores pueden eliminar mangas."
+                });
+            }
+
             Response<Mangas> response = await _mangasService.DeleteManga(mangaId);
             return ResponseHandler(response);
         }
